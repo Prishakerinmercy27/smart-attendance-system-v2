@@ -1,0 +1,4200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Smart Campus - Attendance & Leave Management System</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --primary: #2563eb;
+      --primary-dark: #1e40af;
+      --secondary: #8b5cf6;
+      --success: #10b981;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --dark: #0f172a;
+      --light: #f8fafc;
+      --glass: rgba(255, 255, 255, 0.05);
+      --shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+
+    body {
+      font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+      color: #e2e8f0;
+      min-height: 100vh;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* Animated Background */
+    body::before {
+      content: '';
+      position: fixed;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: 
+        radial-gradient(circle at 20% 30%, rgba(37, 99, 235, 0.15) 0%, transparent 40%),
+        radial-gradient(circle at 80% 70%, rgba(139, 92, 246, 0.15) 0%, transparent 40%),
+        radial-gradient(circle at 50% 50%, rgba(16, 185, 129, 0.08) 0%, transparent 50%);
+      animation: float 25s ease-in-out infinite;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translate(0, 0) rotate(0deg); }
+      25% { transform: translate(5%, -5%) rotate(90deg); }
+      50% { transform: translate(-5%, 5%) rotate(180deg); }
+      75% { transform: translate(5%, 5%) rotate(270deg); }
+    }
+
+    /* Grid Pattern */
+    body::after {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: 
+        linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+      background-size: 50px 50px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Notification Badge */
+    .notification-badge {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: linear-gradient(135deg, var(--danger), #dc2626);
+      color: white;
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
+      z-index: 1000;
+      transition: all 0.3s;
+      animation: pulse-notification 2s infinite;
+    }
+
+    .notification-badge:hover {
+      transform: scale(1.1);
+    }
+
+    .notification-badge .count {
+      position: absolute;
+      top: -5px;
+      right: -5px;
+      background: #fff;
+      color: var(--danger);
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      font-size: 12px;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid var(--danger);
+    }
+
+    @keyframes pulse-notification {
+      0%, 100% { box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4); }
+      50% { box-shadow: 0 4px 25px rgba(239, 68, 68, 0.8); }
+    }
+
+    /* Notification Panel */
+    .notification-panel {
+      position: fixed;
+      top: 80px;
+      right: 20px;
+      width: 400px;
+      max-height: 600px;
+      background: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+      z-index: 999;
+      display: none;
+      overflow: hidden;
+      animation: slideIn 0.3s ease;
+    }
+
+    .notification-panel.active {
+      display: block;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .notification-header {
+      padding: 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .notification-header h3 {
+      font-size: 18px;
+      color: #f1f5f9;
+    }
+
+    .clear-all {
+      color: var(--primary);
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: color 0.3s;
+    }
+
+    .clear-all:hover {
+      color: #60a5fa;
+    }
+
+    .notification-list {
+      max-height: 500px;
+      overflow-y: auto;
+    }
+
+    .notification-item {
+      padding: 16px 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      transition: background 0.3s;
+      cursor: pointer;
+    }
+
+    .notification-item:hover {
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .notification-item.unread {
+      background: rgba(37, 99, 235, 0.1);
+      border-left: 3px solid var(--primary);
+    }
+
+    .notification-item .notification-icon {
+      font-size: 24px;
+      margin-bottom: 8px;
+    }
+
+    .notification-item .notification-text {
+      color: #cbd5e1;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .notification-item .notification-time {
+      color: #64748b;
+      font-size: 12px;
+      margin-top: 4px;
+    }
+
+    /* Tab Navigation */
+    .tab-navigation {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 24px;
+      border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+      padding-bottom: 0;
+    }
+
+    .tab-btn {
+      padding: 12px 20px;
+      background: transparent;
+      border: none;
+      border-bottom: 3px solid transparent;
+      color: #94a3b8;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      text-transform: none;
+      margin-bottom: -2px;
+    }
+
+    .tab-btn:hover {
+      color: #e2e8f0;
+    }
+
+    .tab-btn.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+    }
+
+    /* Calendar Styling */
+    .calendar-controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+
+    .btn-icon {
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      border: none;
+      color: white;
+      padding: 10px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.3s;
+    }
+
+    .btn-icon:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(37, 99, 235, 0.3);
+    }
+
+    .attendance-legend {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 24px;
+      padding: 16px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+    }
+
+    .legend-box {
+      width: 16px;
+      height: 16px;
+      border-radius: 4px;
+      display: inline-block;
+    }
+
+    .legend-box.present {
+      background: var(--success);
+    }
+
+    .legend-box.absent {
+      background: var(--danger);
+    }
+
+    .legend-box.leave {
+      background: var(--warning);
+    }
+
+    .legend-box.weekend {
+      background: #64748b;
+    }
+
+    .legend-box.future {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 8px;
+      margin-bottom: 24px;
+    }
+
+    .calendar-day {
+      aspect-ratio: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      cursor: default;
+      transition: all 0.3s;
+      position: relative;
+      padding: 4px;
+      text-align: center;
+      font-size: 12px;
+      min-height: 80px;
+    }
+
+    .calendar-day-number {
+      font-weight: 600;
+      font-size: 14px;
+      margin-bottom: 2px;
+    }
+
+    .calendar-day-status {
+      font-size: 11px;
+      opacity: 0.8;
+    }
+
+    .calendar-day.present {
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.3), rgba(16, 185, 129, 0.1));
+      border-color: var(--success);
+      color: #10b981;
+    }
+
+    .calendar-day.absent {
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.3), rgba(239, 68, 68, 0.1));
+      border-color: var(--danger);
+      color: #ef4444;
+    }
+
+    .calendar-day.leave {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.3), rgba(245, 158, 11, 0.1));
+      border-color: var(--warning);
+      color: #f59e0b;
+    }
+
+    .calendar-day.weekend {
+      background: rgba(100, 116, 139, 0.2);
+      border-color: #64748b;
+      color: #94a3b8;
+    }
+
+    .calendar-day.future {
+      background: rgba(255, 255, 255, 0.02);
+      border-color: rgba(255, 255, 255, 0.05);
+      color: #64748b;
+    }
+
+    .calendar-day.other-month {
+      opacity: 0.3;
+    }
+
+    .calendar-day.today {
+      border-color: var(--primary);
+      border-width: 2px;
+      box-shadow: 0 0 12px rgba(37, 99, 235, 0.3);
+    }
+
+    .calendar-day.sunday {
+      background: rgba(168, 85, 247, 0.15);
+      border-color: #a855f7;
+      color: #d8b4fe;
+    }
+
+    .calendar-day.government-holiday {
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.4), rgba(239, 68, 68, 0.2));
+      border: 2px solid var(--danger);
+      color: #fca5a5;
+      font-weight: 600;
+    }
+
+    .calendar-day.festival-holiday {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.4), rgba(245, 158, 11, 0.2));
+      border: 2px solid #f59e0b;
+      color: #fcd34d;
+      font-weight: 600;
+    }
+
+    .holiday-label {
+      font-size: 9px;
+      margin-top: 2px;
+      opacity: 0.9;
+      font-weight: 500;
+    }
+
+    .calendar-day-label {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      opacity: 0.6;
+      letter-spacing: 0.5px;
+    }
+
+    .attendance-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+    }
+
+    .stats-item {
+      background: rgba(255, 255, 255, 0.05);
+      padding: 20px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      text-align: center;
+    }
+
+    .stats-item-value {
+      font-size: 28px;
+      font-weight: bold;
+      margin: 8px 0;
+    }
+
+    .stats-item-label {
+      font-size: 13px;
+      color: #94a3b8;
+    }
+
+    .stats-item.present-stat .stats-item-value {
+      color: var(--success);
+    }
+
+    .stats-item.absent-stat .stats-item-value {
+      color: var(--danger);
+    }
+
+    .stats-item.leave-stat .stats-item-value {
+      color: var(--warning);
+    }
+
+    .stats-item.percentage-stat .stats-item-value {
+      color: var(--primary);
+    }
+
+    @media (max-width: 768px) {
+      .calendar-grid {
+        gap: 6px;
+      }
+
+      .calendar-day {
+        min-height: 60px;
+        font-size: 11px;
+      }
+
+      .calendar-day-number {
+        font-size: 12px;
+      }
+
+      .calendar-controls {
+        flex-direction: column;
+      }
+
+      #calendarMonth {
+        min-width: 100%;
+      }
+    }
+
+    /* Attendance Marking & Dashboard */
+    .student-attendance-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      transition: all 0.3s;
+    }
+
+    .student-attendance-item:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .student-info {
+      flex: 1;
+    }
+
+    .student-name {
+      font-weight: 600;
+      color: #e2e8f0;
+      margin-bottom: 4px;
+    }
+
+    .student-reg {
+      font-size: 12px;
+      color: #94a3b8;
+    }
+
+    .attendance-toggle {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .attendance-btn {
+      padding: 8px 16px;
+      border: 2px solid transparent;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-size: 13px;
+    }
+
+    .attendance-btn.present {
+      background: rgba(16, 185, 129, 0.2);
+      border-color: var(--success);
+      color: var(--success);
+    }
+
+    .attendance-btn.present.active {
+      background: var(--success);
+      color: white;
+    }
+
+    .attendance-btn.absent {
+      background: rgba(239, 68, 68, 0.2);
+      border-color: var(--danger);
+      color: var(--danger);
+    }
+
+    .attendance-btn.absent.active {
+      background: var(--danger);
+      color: white;
+    }
+
+    .attendance-btn.leave {
+      background: rgba(245, 158, 11, 0.2);
+      border-color: var(--warning);
+      color: var(--warning);
+    }
+
+    .attendance-btn.leave.active {
+      background: var(--warning);
+      color: white;
+    }
+
+    .attendance-stats-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .attendance-stat-box {
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(139, 92, 246, 0.1));
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 24px;
+      border-radius: 12px;
+      text-align: center;
+    }
+
+    .attendance-stat-label {
+      color: #94a3b8;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+    }
+
+    .attendance-stat-value {
+      font-size: 32px;
+      font-weight: bold;
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .student-summary-item {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr;
+      gap: 12px;
+      padding: 16px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      align-items: center;
+    }
+
+    .summary-col {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .summary-label {
+      font-size: 11px;
+      color: #94a3b8;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    .summary-value {
+      font-size: 18px;
+      font-weight: bold;
+      color: #e2e8f0;
+    }
+
+    .summary-value.present {
+      color: var(--success);
+    }
+
+    .summary-value.absent {
+      color: var(--danger);
+    }
+
+    .summary-value.percentage {
+      color: var(--primary);
+    }
+
+    @media (max-width: 768px) {
+      .student-attendance-item {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .attendance-toggle {
+        width: 100%;
+        margin-top: 12px;
+      }
+
+      .student-summary-item {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .attendance-stats-container {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    /* Toast Notifications */
+    .toast-container {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 10000;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .toast {
+      background: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 16px 20px;
+      min-width: 300px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      animation: slideInRight 0.3s ease;
+    }
+
+    @keyframes slideInRight {
+      from {
+        opacity: 0;
+        transform: translateX(100px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    .toast.success {
+      border-left: 4px solid var(--success);
+    }
+
+    .toast.error {
+      border-left: 4px solid var(--danger);
+    }
+
+    .toast.warning {
+      border-left: 4px solid var(--warning);
+    }
+
+    .toast.info {
+      border-left: 4px solid var(--primary);
+    }
+
+    .toast-icon {
+      font-size: 24px;
+    }
+
+    .toast-content {
+      flex: 1;
+    }
+
+    .toast-title {
+      font-weight: 600;
+      margin-bottom: 4px;
+      color: #f1f5f9;
+    }
+
+    .toast-message {
+      font-size: 14px;
+      color: #cbd5e1;
+    }
+
+    .toast-close {
+      cursor: pointer;
+      color: #64748b;
+      font-size: 20px;
+      transition: color 0.3s;
+    }
+
+    .toast-close:hover {
+      color: #f1f5f9;
+    }
+
+    /* AI Classification Badges */
+    .ai-badge {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-right: 8px;
+      margin-top: 8px;
+    }
+
+    .ai-medical { 
+      background: #dbeafe; 
+      color: #0c4a6e; 
+    }
+
+    .ai-emergency { 
+      background: #fee2e2; 
+      color: #7f1d1d; 
+    }
+
+    .ai-personal { 
+      background: #dcfce7; 
+      color: #166534; 
+    }
+
+    .ai-academic { 
+      background: #fef3c7; 
+      color: #78350f; 
+    }
+
+    .ai-suspicious { 
+      background: #fecaca; 
+      color: #7f1d1d; 
+    }
+
+    /* Priority Badge */
+    .priority-badge {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-weight: 600;
+      margin-right: 8px;
+    }
+
+    .priority-high { 
+      background: #ef4444; 
+      color: white; 
+    }
+
+    .priority-normal { 
+      background: #f59e0b; 
+      color: white; 
+    }
+
+    .priority-low { 
+      background: #6b7280; 
+      color: white; 
+    }
+
+    /* Confidence Score */
+    .confidence-score {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 20px;
+      background: #06b6d4;
+      color: white;
+      font-weight: 600;
+      margin-right: 8px;
+    }
+
+    /* AI Info Container */
+    .ai-info {
+      margin: 12px 0;
+      padding: 8px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 8px;
+    }
+
+    .page {
+      display: none;
+      padding: 40px 20px;
+      min-height: 100vh;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+      z-index: 1;
+    }
+
+    .page.active {
+      display: flex;
+    }
+
+    .container {
+      background: rgba(15, 23, 42, 0.7);
+      backdrop-filter: blur(40px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 24px;
+      padding: 48px;
+      max-width: 500px;
+      width: 100%;
+      box-shadow: 
+        0 20px 60px rgba(0, 0, 0, 0.5),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      position: relative;
+      animation: slideUp 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .container.wide {
+      max-width: 1200px;
+    }
+
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(40px) scale(0.95);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    /* Logo & Branding */
+    .logo {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .logo-icon {
+      width: 80px;
+      height: 80px;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      border-radius: 20px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 40px;
+      margin-bottom: 16px;
+      box-shadow: 0 10px 30px rgba(37, 99, 235, 0.3);
+      animation: pulse 3s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+
+    .brand {
+      font-size: 12px;
+      color: #94a3b8;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+
+    h1 {
+      font-size: 28px;
+      color: #f1f5f9;
+      text-align: center;
+      margin-bottom: 8px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #f1f5f9, #cbd5e1);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #94a3b8;
+      font-size: 14px;
+      margin-bottom: 32px;
+    }
+
+    h2 {
+      font-size: 20px;
+      color: #e2e8f0;
+      margin-bottom: 16px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 16px 24px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      margin: 12px 0;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+      transition: left 0.5s;
+    }
+
+    .btn:hover::before {
+      left: 100%;
+    }
+
+    .btn:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(37, 99, 235, 0.5);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn.secondary {
+      background: rgba(255, 255, 255, 0.08);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+      backdrop-filter: blur(10px);
+    }
+
+    .btn.secondary:hover {
+      background: rgba(255, 255, 255, 0.12);
+    }
+
+    .btn.success {
+      background: linear-gradient(135deg, var(--success), #059669);
+      box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+    }
+
+    .btn.danger {
+      background: linear-gradient(135deg, var(--danger), #dc2626);
+      box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
+    }
+
+    .btn-group {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    /* Form Elements */
+    .input-group {
+      margin-bottom: 16px;
+      position: relative;
+    }
+
+    .input-label {
+      display: block;
+      color: #cbd5e1;
+      font-size: 13px;
+      font-weight: 500;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      padding: 14px 16px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.05);
+      color: #f1f5f9;
+      font-size: 15px;
+      transition: all 0.3s ease;
+      font-family: inherit;
+    }
+
+    .password-container {
+      position: relative;
+    }
+
+    .password-container input {
+      padding-right: 50px;
+    }
+
+    .password-toggle {
+      position: absolute;
+      right: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      cursor: pointer;
+      color: #94a3b8;
+      font-size: 20px;
+      user-select: none;
+      transition: color 0.3s;
+    }
+
+    .password-toggle:hover {
+      color: #e2e8f0;
+    }
+
+    textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+      background: rgba(255, 255, 255, 0.08);
+      box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+    }
+
+    input::placeholder, textarea::placeholder {
+      color: rgba(203, 213, 225, 0.3);
+    }
+
+    select {
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L6 6L11 1' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 16px center;
+      padding-right: 40px;
+    }
+
+    /* Close Button */
+    .close-btn {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.05);
+      color: #94a3b8;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-size: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      z-index: 10;
+    }
+
+    .close-btn:hover {
+      background: rgba(239, 68, 68, 0.1);
+      color: var(--danger);
+      transform: rotate(90deg);
+      border-color: var(--danger);
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 24px;
+      background: rgba(255, 255, 255, 0.03);
+      padding: 6px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .tab {
+      flex: 1;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      background: transparent;
+      color: #94a3b8;
+      border: none;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .tab.active {
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: white;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+    }
+
+    .tab:hover:not(.active) {
+      background: rgba(255, 255, 255, 0.05);
+      color: #cbd5e1;
+    }
+
+    /* Messages */
+    .message {
+      margin-top: 16px;
+      padding: 12px 16px;
+      border-radius: 10px;
+      text-align: center;
+      font-size: 14px;
+      font-weight: 500;
+      animation: slideDown 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .message.success {
+      background: rgba(16, 185, 129, 0.1);
+      color: var(--success);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .message.error {
+      background: rgba(239, 68, 68, 0.1);
+      color: var(--danger);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    .message.warning {
+      background: rgba(245, 158, 11, 0.1);
+      color: var(--warning);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+
+    /* Dashboard */
+    .dashboard-header {
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(139, 92, 246, 0.1));
+      padding: 24px;
+      border-radius: 16px;
+      margin-bottom: 32px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+    }
+
+    .dashboard-header h2 {
+      font-size: 24px;
+      margin-bottom: 8px;
+      background: linear-gradient(135deg, #f1f5f9, #cbd5e1);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .dashboard-header p {
+      color: #94a3b8;
+      font-size: 14px;
+    }
+
+    /* Stats Grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin-bottom: 32px;
+    }
+
+    .stat-card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 24px;
+      text-align: center;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 3px;
+      background: linear-gradient(90deg, var(--primary), var(--secondary));
+      transform: scaleX(0);
+      transition: transform 0.3s;
+    }
+
+    .stat-card:hover {
+      background: rgba(255, 255, 255, 0.05);
+      transform: translateY(-5px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    }
+
+    .stat-card:hover::before {
+      transform: scaleX(1);
+    }
+
+    .stat-icon {
+      font-size: 32px;
+      margin-bottom: 12px;
+    }
+
+    .stat-value {
+      font-size: 36px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .stat-label {
+      color: #94a3b8;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: 600;
+    }
+
+    /* Cards */
+    .card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 20px;
+      margin: 16px 0;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 4px;
+      height: 100%;
+      background: linear-gradient(180deg, var(--primary), var(--secondary));
+      transform: scaleY(0);
+      transition: transform 0.3s;
+    }
+
+    .card:hover {
+      background: rgba(255, 255, 255, 0.05);
+      transform: translateX(4px);
+      border-color: rgba(37, 99, 235, 0.3);
+    }
+
+    .card:hover::before {
+      transform: scaleY(1);
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .card-title {
+      color: #3b82f6;
+      font-weight: 600;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .badge {
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .badge.pending {
+      background: rgba(245, 158, 11, 0.15);
+      color: var(--warning);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+
+    .badge.approved {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--success);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .badge.rejected {
+      background: rgba(239, 68, 68, 0.15);
+      color: var(--danger);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    .card-content {
+      color: #cbd5e1;
+      font-size: 14px;
+      line-height: 1.6;
+      margin-top: 8px;
+    }
+
+    .card-meta {
+      color: #64748b;
+      font-size: 12px;
+      margin-top: 12px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #64748b;
+    }
+
+    .empty-state-icon {
+      font-size: 64px;
+      margin-bottom: 16px;
+      opacity: 0.5;
+    }
+
+    /* Loading */
+    .loading {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 9999;
+      display: none;
+    }
+
+    .loading.active {
+      display: block;
+    }
+
+    .spinner {
+      width: 60px;
+      height: 60px;
+      border: 4px solid rgba(255, 255, 255, 0.1);
+      border-top: 4px solid var(--primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* Footer */
+    .footer {
+      position: fixed;
+      bottom: 20px;
+      left: 20px;
+      color: #64748b;
+      font-size: 11px;
+      z-index: 100;
+      font-weight: 500;
+      letter-spacing: 0.5px;
+    }
+
+    .settings-link {
+      text-align: center;
+      margin-top: 24px;
+      color: #3b82f6;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: color 0.3s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .settings-link:hover {
+      color: #60a5fa;
+      text-decoration: underline;
+    }
+
+    /* Filter Controls */
+    .filter-controls {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .filter-btn {
+      padding: 10px 20px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      color: #94a3b8;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .filter-btn.active {
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: white;
+      border-color: transparent;
+    }
+
+    .filter-btn:hover:not(.active) {
+      background: rgba(255, 255, 255, 0.08);
+      color: #cbd5e1;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .container {
+        padding: 32px 24px;
+        border-radius: 20px;
+      }
+
+      h1 {
+        font-size: 24px;
+      }
+
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+      }
+
+      .stat-value {
+        font-size: 28px;
+      }
+
+      .btn-group {
+        grid-template-columns: 1fr;
+      }
+
+      .logo-icon {
+        width: 64px;
+        height: 64px;
+        font-size: 32px;
+      }
+
+      .notification-panel {
+        width: calc(100vw - 40px);
+        right: 20px;
+      }
+
+      .notification-badge {
+        top: 10px;
+        right: 10px;
+      }
+    }
+
+    /* Animations */
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .fade-in {
+      animation: fadeIn 0.5s ease-in;
+    }
+  </style>
+</head>
+<body>
+
+<div class="loading" id="loadingSpinner">
+  <div class="spinner"></div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- Notification Badge (shown only for students) -->
+<div class="notification-badge" id="notificationBadge" style="display: none;" onclick="toggleNotificationPanel()">
+  🔔
+  <span class="count" id="notificationCount">0</span>
+</div>
+
+<!-- Notification Panel -->
+<div class="notification-panel" id="notificationPanel">
+  <div class="notification-header">
+    <h3>Notifications</h3>
+    <span class="clear-all" onclick="clearAllNotifications()">Clear All</span>
+  </div>
+  <div class="notification-list" id="notificationList">
+    <div class="empty-state" style="padding: 40px 20px;">
+      <div style="font-size: 48px; margin-bottom: 12px;">🔔</div>
+      <p>No notifications</p>
+    </div>
+  </div>
+</div>
+
+<!-- Home Page -->
+<div id="home" class="page active">
+  <div class="container">
+    <div class="logo">
+      <div class="logo-icon">🎓</div>
+      <div class="brand">Smart Campus</div>
+    </div>
+    <h1>Attendance & Leave Management</h1>
+    <p class="subtitle">Modern solution for educational institutions</p>
+    <button class="btn" onclick="showPage('studentLogin')">
+      <span>👨‍🎓</span> Student Portal
+    </button>
+    <button class="btn" onclick="showPage('teacherLogin')">
+      <span>👨‍🏫</span> Teacher Portal
+    </button>
+  </div>
+</div>
+
+<div class="footer">© 2024 Smart Campus • Designed by Prisha Kerin Mercy</div>
+
+<!-- Student Login -->
+<div id="studentLogin" class="page">
+  <div class="container">
+    <div class="close-btn" onclick="showPage('home')">✕</div>
+    <div class="logo">
+      <div class="logo-icon">👨‍🎓</div>
+      <div class="brand">Student Portal</div>
+    </div>
+    <h1>Welcome Back</h1>
+    <p class="subtitle">Access your student dashboard</p>
+    
+    <div class="tabs">
+      <button class="tab active" onclick="toggleStudentTab('login')">Login</button>
+      <button class="tab" onclick="toggleStudentTab('register')">Register</button>
+    </div>
+
+    <div id="studentLoginForm">
+      <div class="input-group">
+        <label class="input-label">Register Number</label>
+        <input id="sReg" type="number" placeholder="Enter your register number (1225-1885)" min="1225" max="1885">
+      </div>
+      <div class="input-group">
+        <label class="input-label">Password</label>
+        <div class="password-container">
+          <input id="sPass" type="password" placeholder="Enter your password">
+          <span class="password-toggle" onclick="togglePassword('sPass', this)">👁️</span>
+        </div>
+      </div>
+      <button class="btn" onclick="studentLogin()">Login to Dashboard</button>
+      <div id="studentLoginMsg"></div>
+    </div>
+
+    <div id="studentRegisterForm" style="display:none">
+      <div class="input-group">
+        <label class="input-label">Full Name</label>
+        <input id="rsName" placeholder="Enter your full name">
+      </div>
+      <div class="input-group">
+        <label class="input-label">Mobile Number</label>
+        <input id="rsPhone" type="tel" placeholder="10-digit mobile number">
+      </div>
+      <div class="input-group">
+        <label class="input-label">Department</label>
+        <select id="rsDept">
+          <option value="">Select your department</option>
+          <option value="CSE">Computer Science (CSE)</option>
+          <option value="ECE">Electronics & Communication (ECE)</option>
+          <option value="IT">Information Technology (IT)</option>
+          <option value="MECH">Mechanical Engineering (MECH)</option>
+          <option value="AIDS">Artificial Intelligence & Data Science (AIDS)</option>
+        </select>
+      </div>
+      <div class="input-group">
+        <label class="input-label">Register Number</label>
+        <input id="rsReg" type="number" placeholder="1225-1885" min="1225" max="1885">
+      </div>
+      <div class="input-group">
+        <label class="input-label">Create Password</label>
+        <div class="password-container">
+          <input id="rsPass" type="password" placeholder="Minimum 4 characters">
+          <span class="password-toggle" onclick="togglePassword('rsPass', this)">👁️</span>
+        </div>
+      </div>
+      <button class="btn" onclick="studentRegister()">Create Account</button>
+      <div id="studentMsg"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Teacher Login -->
+<div id="teacherLogin" class="page">
+  <div class="container">
+    <div class="close-btn" onclick="showPage('home')">✕</div>
+    <div class="logo">
+      <div class="logo-icon">👨‍🏫</div>
+      <div class="brand">Teacher Portal</div>
+    </div>
+    <h1>Welcome Back</h1>
+    <p class="subtitle">Manage student leave requests</p>
+    
+    <div class="tabs">
+      <button class="tab active" onclick="toggleTeacherTab('login')">Login</button>
+      <button class="tab" onclick="toggleTeacherTab('register')">Register</button>
+    </div>
+
+    <div id="teacherLoginForm">
+      <div class="input-group">
+        <label class="input-label">Mobile Number</label>
+        <input id="tPhone" type="tel" placeholder="Enter your mobile number">
+      </div>
+      <div class="input-group">
+        <label class="input-label">Password</label>
+        <div class="password-container">
+          <input id="tPass" type="password" placeholder="Enter your password">
+          <span class="password-toggle" onclick="togglePassword('tPass', this)">👁️</span>
+        </div>
+      </div>
+      <button class="btn" onclick="teacherLogin()">Login to Dashboard</button>
+      <div id="teacherLoginMsg"></div>
+    </div>
+
+    <div id="teacherRegisterForm" style="display:none">
+      <div class="input-group">
+        <label class="input-label">Full Name</label>
+        <input id="rtName" placeholder="Enter your full name">
+      </div>
+      <div class="input-group">
+        <label class="input-label">Mobile Number</label>
+        <input id="rtPhone" type="tel" placeholder="10-digit mobile number">
+      </div>
+      <div class="input-group">
+        <label class="input-label">Department</label>
+        <select id="rtDept">
+          <option value="">Select your department</option>
+          <option value="CSE">Computer Science (CSE)</option>
+          <option value="ECE">Electronics & Communication (ECE)</option>
+          <option value="IT">Information Technology (IT)</option>
+          <option value="MECH">Mechanical Engineering (MECH)</option>
+          <option value="AIDS">Artificial Intelligence & Data Science (AIDS)</option>
+        </select>
+      </div>
+      <div class="input-group">
+        <label class="input-label">Create Password</label>
+        <div class="password-container">
+          <input id="rtPass" type="password" placeholder="Minimum 4 characters">
+          <span class="password-toggle" onclick="togglePassword('rtPass', this)">👁️</span>
+        </div>
+      </div>
+      <button class="btn" onclick="teacherRegister()">Create Account</button>
+      <div id="teacherMsg"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Student Dashboard -->
+<div id="studentPortal" class="page">
+  <div class="container wide">
+    <div class="close-btn" onclick="logout()">✕</div>
+    
+    <div class="dashboard-header">
+      <h2 id="studentName">👋 Welcome, Student!</h2>
+      <p id="studentInfo"></p>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon">📊</div>
+        <div class="stat-value" id="totalRequests">0</div>
+        <div class="stat-label">Total Requests</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">✅</div>
+        <div class="stat-value" id="approvedCount">0</div>
+        <div class="stat-label">Approved</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">⏳</div>
+        <div class="stat-value" id="pendingCount">0</div>
+        <div class="stat-label">Pending</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">❌</div>
+        <div class="stat-value" id="rejectedCount">0</div>
+        <div class="stat-label">Rejected</div>
+      </div>
+    </div>
+
+    <button class="btn" onclick="showLeaveForm()">📝 Apply for Leave</button>
+
+    <div id="leaveFormSection" style="display:none; margin-top: 24px;">
+      <h2>📋 New Leave Request</h2>
+      <div class="input-group">
+        <label class="input-label">Leave Date</label>
+        <input id="leaveDate" type="date">
+      </div>
+      <div class="input-group">
+        <label class="input-label">Reason for Leave</label>
+        <textarea id="leaveReason" placeholder="Please provide a detailed reason (minimum 10 characters)"></textarea>
+      </div>
+      <div class="input-group">
+        <label class="input-label">Medical Certificate / Proof (Optional)</label>
+        <input id="proofFile" type="file" accept=".pdf,.jpg,.jpeg,.png" style="padding: 10px;">
+        <p style="font-size: 12px; color: #64748b; margin-top: 8px;">Upload medical certificate or proof (PDF, JPG, PNG - Max 5MB)</p>
+      </div>
+      <div class="input-group">
+        <label class="input-label">Parent's Letter (Optional)</label>
+        <input id="parentLetter" type="file" accept=".pdf,.jpg,.jpeg,.png" style="padding: 10px;">
+        <p style="font-size: 12px; color: #64748b; margin-top: 8px;">Upload signed parent's letter (PDF, JPG, PNG - Max 5MB)</p>
+      </div>
+      <div class="btn-group">
+        <button class="btn" onclick="submitLeaveRequest()">Submit Request</button>
+        <button class="btn secondary" onclick="hideLeaveForm()">Cancel</button>
+      </div>
+      <div id="leaveMsg"></div>
+    </div>
+
+    <!-- Tab Navigation -->
+    <div style="margin-top: 32px;">
+      <div class="tab-navigation">
+        <button class="tab-btn active" onclick="switchStudentTab('requests')" id="requestsTab">📜 Leave Requests</button>
+        <button class="tab-btn" onclick="switchStudentTab('attendance')" id="attendanceTab">📅 Attendance Calendar</button>
+      </div>
+    </div>
+
+    <!-- Leave Requests Tab -->
+    <div id="requestsTabContent" style="margin-top: 24px;">
+      <h2>📜 Your Leave Requests</h2>
+      
+      <!-- Filter Controls -->
+      <div class="filter-controls">
+        <button class="filter-btn active" onclick="filterStudentRequests('all')">All</button>
+        <button class="filter-btn" onclick="filterStudentRequests('pending')">Pending</button>
+        <button class="filter-btn" onclick="filterStudentRequests('approved')">Approved</button>
+        <button class="filter-btn" onclick="filterStudentRequests('rejected')">Rejected</button>
+      </div>
+      
+      <div id="leaveRequestsList"></div>
+    </div>
+
+    <!-- Attendance Calendar Tab -->
+    <div id="attendanceTabContent" style="display: none; margin-top: 24px;">
+      <h2>📅 Attendance Calendar</h2>
+      <div class="calendar-controls">
+        <button class="btn-icon" onclick="previousMonth()">← Previous</button>
+        <div id="calendarMonth" style="font-size: 18px; font-weight: bold; min-width: 200px; text-align: center;"></div>
+        <button class="btn-icon" onclick="nextMonth()">Next →</button>
+      </div>
+      <div class="attendance-legend">
+        <div class="legend-item"><span class="legend-box present"></span> Present</div>
+        <div class="legend-item"><span class="legend-box absent"></span> Absent</div>
+        <div class="legend-item"><span class="legend-box leave"></span> On Leave</div>
+        <div class="legend-item"><span class="legend-box weekend"></span> Weekend</div>
+        <div class="legend-item"><span class="legend-box future"></span> Future</div>
+      </div>
+      <div id="attendanceCalendar" class="calendar-grid"></div>
+      <div id="attendanceStats" style="margin-top: 24px;"></div>
+    </div>
+
+    <div style="text-align: center;">
+      <div class="settings-link" onclick="showChangePassword('student')">⚙️ Change Password</div>
+    </div>
+  </div>
+</div>
+
+<!-- Teacher Dashboard -->
+<div id="teacherPortal" class="page">
+  <div class="container wide">
+    <div class="close-btn" onclick="logout()">✕</div>
+    
+    <div class="dashboard-header">
+      <h2 id="teacherName">👋 Welcome, Teacher!</h2>
+      <p id="teacherInfo"></p>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon">📊</div>
+        <div class="stat-value" id="tTotalRequests">0</div>
+        <div class="stat-label">Total Requests</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">⏳</div>
+        <div class="stat-value" id="tPendingCount">0</div>
+        <div class="stat-label">Pending Review</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">✅</div>
+        <div class="stat-value" id="tApprovedCount">0</div>
+        <div class="stat-label">Approved</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">❌</div>
+        <div class="stat-value" id="tRejectedCount">0</div>
+        <div class="stat-label">Rejected</div>
+      </div>
+    </div>
+
+    <!-- Teacher Tab Navigation -->
+    <div style="margin-top: 32px;">
+      <div class="tab-navigation">
+        <button class="tab-btn active" onclick="switchTeacherTab('requests')" id="requestsTeacherTab">📬 Leave Requests</button>
+        <button class="tab-btn" onclick="switchTeacherTab('marking')" id="markingTab">✏️ Mark Attendance</button>
+        <button class="tab-btn" onclick="switchTeacherTab('dashboard')" id="dashboardTab">📊 Attendance Dashboard</button>
+        <button class="tab-btn" onclick="switchTeacherTab('analytics')" id="analyticsTab">📈 Analytics</button>
+      </div>
+    </div>
+
+    <!-- Leave Requests Tab -->
+    <div id="requestsTeacherTabContent" style="margin-top: 24px;">
+      <h2>📬 Student Leave Requests</h2>
+      
+      <!-- Filter Controls -->
+      <div class="filter-controls">
+        <button class="filter-btn active" onclick="filterTeacherRequests('all')">All</button>
+        <button class="filter-btn" onclick="filterTeacherRequests('pending')">Pending</button>
+        <button class="filter-btn" onclick="filterTeacherRequests('approved')">Approved</button>
+        <button class="filter-btn" onclick="filterTeacherRequests('rejected')">Rejected</button>
+      </div>
+      
+      <div id="teacherRequestsList"></div>
+    </div>
+
+    <!-- Mark Attendance Tab -->
+    <div id="markingTabContent" style="display: none; margin-top: 24px;">
+      <h2>✏️ Mark Attendance</h2>
+      <div style="margin-bottom: 20px;">
+        <label class="input-label">Select Date</label>
+        <input id="attendanceDate" type="date">
+      </div>
+      <div id="studentAttendanceList" style="display: grid; gap: 12px;"></div>
+      <button class="btn" onclick="saveAttendance()" style="margin-top: 20px;">💾 Save Attendance</button>
+      <div id="attendanceMsg"></div>
+    </div>
+
+    <!-- Attendance Dashboard Tab -->
+    <div id="dashboardTabContent" style="display: none; margin-top: 24px;">
+      <h2>📊 Class Attendance Dashboard</h2>
+      
+      <div style="margin-bottom: 20px; display: flex; gap: 12px; flex-wrap: wrap;">
+        <div>
+          <label class="input-label">From Date</label>
+          <input id="dashFromDate" type="date" onchange="updateAttendanceDashboard()">
+        </div>
+        <div>
+          <label class="input-label">To Date</label>
+          <input id="dashToDate" type="date" onchange="updateAttendanceDashboard()">
+        </div>
+      </div>
+
+      <div class="attendance-stats-container">
+        <div class="attendance-stat-box">
+          <div class="attendance-stat-label">Total Classes</div>
+          <div class="attendance-stat-value" id="dashTotalDays">0</div>
+        </div>
+        <div class="attendance-stat-box">
+          <div class="attendance-stat-label">Class Avg Attendance</div>
+          <div class="attendance-stat-value" id="dashAvgAttendance">0%</div>
+        </div>
+        <div class="attendance-stat-box">
+          <div class="attendance-stat-label">Total Students</div>
+          <div class="attendance-stat-value" id="dashTotalStudents">0</div>
+        </div>
+        <div class="attendance-stat-box">
+          <div class="attendance-stat-label">High Attendance</div>
+          <div class="attendance-stat-value" id="dashHighAttendance">0</div>
+        </div>
+      </div>
+
+      <h3 style="margin-top: 30px; margin-bottom: 15px;">📋 Student Attendance Summary</h3>
+      <div id="studentAttendanceSummary" style="display: grid; gap: 12px;"></div>
+    </div>
+
+    <!-- Analytics Tab -->
+    <div id="analyticsTabContent" style="display: none; margin-top: 24px;">
+      <h2>📈 Weekly & Monthly Analytics</h2>
+      
+      <div style="margin-bottom: 20px; display: flex; gap: 12px; flex-wrap: wrap;">
+        <div>
+          <label class="input-label">View Type</label>
+          <select id="analyticsViewType" onchange="updateAnalytics()" style="padding: 8px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.05); color: white;">
+            <option value="weekly">Weekly</option>
+            <option value="monthly">Monthly</option>
+          </select>
+        </div>
+        <div>
+          <label class="input-label">Week/Month</label>
+          <input id="analyticsDatePicker" type="date" onchange="updateAnalytics()" style="padding: 8px; border-radius: 8px;">
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 30px;">
+        <!-- Attendance Trend Chart -->
+        <div style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 20px;">
+          <h3 style="margin-top: 0; margin-bottom: 15px;">📊 Attendance Trend</h3>
+          <canvas id="attendanceTrendChart" style="max-height: 250px; width: 100%;"></canvas>
+        </div>
+
+        <!-- Status Distribution Chart -->
+        <div style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 20px;">
+          <h3 style="margin-top: 0; margin-bottom: 15px;">📍 Status Distribution</h3>
+          <canvas id="statusDistributionChart" style="max-height: 250px; width: 100%;"></canvas>
+        </div>
+      </div>
+
+      <!-- Analytics Summary Cards -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 30px;">
+        <div style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.3), rgba(16, 185, 129, 0.1)); border: 1px solid #10b981; border-radius: 12px; padding: 20px; text-align: center;">
+          <div style="font-size: 28px; font-weight: bold; color: #10b981;" id="analyticsAvgAttendance">0%</div>
+          <div style="color: #94a3b8; font-size: 14px;">Avg Attendance</div>
+        </div>
+        <div style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.3), rgba(239, 68, 68, 0.1)); border: 1px solid #ef4444; border-radius: 12px; padding: 20px; text-align: center;">
+          <div style="font-size: 28px; font-weight: bold; color: #ef4444;" id="analyticsAbsentCount">0</div>
+          <div style="color: #94a3b8; font-size: 14px;">Absent Days</div>
+        </div>
+        <div style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.3), rgba(245, 158, 11, 0.1)); border: 1px solid #f59e0b; border-radius: 12px; padding: 20px; text-align: center;">
+          <div style="font-size: 28px; font-weight: bold; color: #f59e0b;" id="analyticsLeaveCount">0</div>
+          <div style="color: #94a3b8; font-size: 14px;">Leave Days</div>
+        </div>
+        <div style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.3), rgba(59, 130, 246, 0.1)); border: 1px solid #3b82f6; border-radius: 12px; padding: 20px; text-align: center;">
+          <div style="font-size: 28px; font-weight: bold; color: #3b82f6;" id="analyticsPresentCount">0</div>
+          <div style="color: #94a3b8; font-size: 14px;">Present Days</div>
+        </div>
+      </div>
+
+      <!-- Student Wise Analytics -->
+      <div style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 20px;">
+        <h3 style="margin-top: 0; margin-bottom: 15px;">👥 Student-Wise Attendance</h3>
+        <div id="studentWiseAnalytics" style="max-height: 400px; overflow-y: auto;"></div>
+      </div>
+    </div>
+
+    <div style="text-align: center;">
+      <div class="settings-link" onclick="showChangePassword('teacher')">⚙️ Change Password</div>
+    </div>
+  </div>
+</div>
+
+<!-- Change Password -->
+<div id="changePasswordModal" class="page">
+  <div class="container">
+    <div class="close-btn" onclick="hideChangePassword()">✕</div>
+    <div class="logo">
+      <div class="logo-icon">🔐</div>
+      <div class="brand">Security</div>
+    </div>
+    <h1>Change Password</h1>
+    <p class="subtitle">Update your account password</p>
+    
+    <div class="input-group">
+      <label class="input-label">Current Password</label>
+      <div class="password-container">
+        <input id="currentPass" type="password" placeholder="Enter current password">
+        <span class="password-toggle" onclick="togglePassword('currentPass', this)">👁️</span>
+      </div>
+    </div>
+    <div class="input-group">
+      <label class="input-label">New Password</label>
+      <div class="password-container">
+        <input id="newPass" type="password" placeholder="Minimum 4 characters">
+        <span class="password-toggle" onclick="togglePassword('newPass', this)">👁️</span>
+      </div>
+    </div>
+    <div class="input-group">
+      <label class="input-label">Confirm New Password</label>
+      <div class="password-container">
+        <input id="confirmPass" type="password" placeholder="Re-enter new password">
+        <span class="password-toggle" onclick="togglePassword('confirmPass', this)">👁️</span>
+      </div>
+    </div>
+    
+    <button class="btn" onclick="changePassword()">Update Password</button>
+    <button class="btn secondary" onclick="hideChangePassword()">Cancel</button>
+    <div id="changePassMsg"></div>
+  </div>
+</div>
+
+<script>
+// Database Simulation with localStorage persistence
+var DB = {
+  students: JSON.parse(localStorage.getItem('students') || '[]'),
+  teachers: JSON.parse(localStorage.getItem('teachers') || '[]'),
+  leaveRequests: JSON.parse(localStorage.getItem('leaveRequests') || '[]'),
+  notifications: JSON.parse(localStorage.getItem('notifications') || '[]'),
+  attendance: JSON.parse(localStorage.getItem('attendance') || '[]'),
+  attendanceMarked: JSON.parse(localStorage.getItem('attendanceMarked') || '[]'),
+  
+  query: function(collection, condition) {
+    var items = this[collection];
+    if (!condition) return items;
+    return items.filter(condition);
+  },
+  
+  insert: function(collection, data) {
+    this[collection].push(data);
+    this._save(collection);
+    return data;
+  },
+  
+  update: function(collection, condition, updates) {
+    var items = this[collection];
+    for (var i = 0; i < items.length; i++) {
+      if (condition(items[i])) {
+        for (var key in updates) {
+          items[i][key] = updates[key];
+        }
+        this._save(collection);
+        return items[i];
+      }
+    }
+    return null;
+  },
+  
+  deleteItem: function(collection, condition) {
+    var originalLength = this[collection].length;
+    this[collection] = this[collection].filter(function(item) {
+      return !condition(item);
+    });
+    if (this[collection].length !== originalLength) {
+      this._save(collection);
+      return true;
+    }
+    return false;
+  },
+  
+  _save: function(collection) {
+    localStorage.setItem(collection, JSON.stringify(this[collection]));
+  }
+};
+
+var currentUser = null;
+var userType = null;
+var previousPage = null;
+var currentStudentFilter = 'all';
+var currentTeacherFilter = 'all';
+
+// Toast Notification System
+function showToast(title, message, type, duration) {
+  type = type || 'info';
+  duration = duration || 4000;
+  
+  var container = document.getElementById('toastContainer');
+  var toast = document.createElement('div');
+  toast.className = 'toast ' + type;
+  
+  var icons = {
+    success: '✓',
+    error: '✕',
+    warning: '⚠️',
+    info: 'ℹ️'
+  };
+  
+  toast.innerHTML = 
+    '<div class="toast-icon">' + icons[type] + '</div>' +
+    '<div class="toast-content">' +
+      '<div class="toast-title">' + title + '</div>' +
+      '<div class="toast-message">' + message + '</div>' +
+    '</div>' +
+    '<div class="toast-close" onclick="this.parentElement.remove()">✕</div>';
+  
+  container.appendChild(toast);
+  
+  setTimeout(function() {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateX(100px)';
+    setTimeout(function() {
+      if (toast.parentElement) {
+        toast.remove();
+      }
+    }, 300);
+  }, duration);
+}
+
+// Notification System
+function addNotification(studentReg, type, title, message) {
+  var notification = {
+    id: Date.now(),
+    studentReg: studentReg,
+    type: type,
+    title: title,
+    message: message,
+    timestamp: new Date().toISOString(),
+    read: false
+  };
+  
+  DB.insert('notifications', notification);
+  return notification;
+}
+
+function getUnreadNotificationCount() {
+  if (!currentUser || userType !== 'student') return 0;
+  var notifications = DB.query('notifications', function(n) {
+    return n.studentReg === currentUser.reg && !n.read;
+  });
+  return notifications.length;
+}
+
+function updateNotificationBadge() {
+  var count = getUnreadNotificationCount();
+  var badge = document.getElementById('notificationBadge');
+  var countEl = document.getElementById('notificationCount');
+  
+  if (count > 0) {
+    badge.style.display = 'flex';
+    countEl.textContent = count;
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+function loadNotifications() {
+  if (!currentUser || userType !== 'student') return;
+  
+  var notifications = DB.query('notifications', function(n) {
+    return n.studentReg === currentUser.reg;
+  });
+  
+  var list = document.getElementById('notificationList');
+  
+  if (notifications.length === 0) {
+    list.innerHTML = 
+      '<div class="empty-state" style="padding: 40px 20px;">' +
+        '<div style="font-size: 48px; margin-bottom: 12px;">🔔</div>' +
+        '<p>No notifications</p>' +
+      '</div>';
+    return;
+  }
+  
+  var html = '';
+  for (var i = notifications.length - 1; i >= 0; i--) {
+    var notif = notifications[i];
+    var iconEmoji = notif.type === 'approved' ? '✅' : (notif.type === 'rejected' ? '❌' : '📬');
+    html += 
+      '<div class="notification-item ' + (notif.read ? '' : 'unread') + '" onclick="markAsRead(' + notif.id + ')">' +
+        '<div class="notification-icon">' + iconEmoji + '</div>' +
+        '<div class="notification-text">' +
+          '<strong>' + notif.title + '</strong><br>' +
+          notif.message +
+        '</div>' +
+        '<div class="notification-time">' + getTimeAgo(notif.timestamp) + '</div>' +
+      '</div>';
+  }
+  list.innerHTML = html;
+}
+
+function markAsRead(notifId) {
+  DB.update('notifications', function(n) { return n.id === notifId; }, { read: true });
+  updateNotificationBadge();
+  loadNotifications();
+}
+
+function clearAllNotifications() {
+  if (!currentUser || userType !== 'student') return;
+  
+  if (confirm('Clear all notifications?')) {
+    DB.deleteItem('notifications', function(n) { return n.studentReg === currentUser.reg; });
+    updateNotificationBadge();
+    loadNotifications();
+    showToast('Success', 'All notifications cleared', 'success');
+  }
+}
+
+function toggleNotificationPanel() {
+  var panel = document.getElementById('notificationPanel');
+  if (panel.classList.contains('active')) {
+    panel.classList.remove('active');
+  } else {
+    panel.classList.add('active');
+    loadNotifications();
+  }
+}
+
+// Close notification panel when clicking outside
+document.addEventListener('click', function(event) {
+  var panel = document.getElementById('notificationPanel');
+  var badge = document.getElementById('notificationBadge');
+  
+  if (!panel.contains(event.target) && !badge.contains(event.target)) {
+    panel.classList.remove('active');
+  }
+});
+
+function getTimeAgo(timestamp) {
+  var now = new Date();
+  var time = new Date(timestamp);
+  var diff = Math.floor((now - time) / 1000);
+  
+  if (diff < 60) return 'Just now';
+  if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+  if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+  if (diff < 604800) return Math.floor(diff / 86400) + 'd ago';
+  return time.toLocaleDateString();
+}
+
+function showLoading(show) {
+  show = show !== false;
+  if (show) {
+    document.getElementById('loadingSpinner').classList.add('active');
+  } else {
+    document.getElementById('loadingSpinner').classList.remove('active');
+  }
+}
+
+function showPage(id) {
+  var pages = document.querySelectorAll('.page');
+  for (var i = 0; i < pages.length; i++) {
+    pages[i].classList.remove('active');
+  }
+  var el = document.getElementById(id);
+  if (el) el.classList.add('active');
+  
+  // Hide notification panel when changing pages
+  document.getElementById('notificationPanel').classList.remove('active');
+}
+
+function togglePassword(inputId, icon) {
+  var input = document.getElementById(inputId);
+  if (input.type === 'password') {
+    input.type = 'text';
+    icon.textContent = '🙈';
+  } else {
+    input.type = 'password';
+    icon.textContent = '👁️';
+  }
+}
+
+function showMessage(elementId, message, type) {
+  var msgEl = document.getElementById(elementId);
+  var icon = type === 'success' ? '✓' : (type === 'error' ? '✕' : '⚠️');
+  msgEl.className = 'message ' + type;
+  msgEl.innerHTML = '<span>' + icon + '</span><span>' + message + '</span>';
+  setTimeout(function() {
+    msgEl.innerHTML = '';
+  }, 5000);
+}
+
+function validatePhone(phone) {
+  return /^[0-9]{10}$/.test(phone);
+}
+
+function toggleStudentTab(tab) {
+  var loginForm = document.getElementById('studentLoginForm');
+  var registerForm = document.getElementById('studentRegisterForm');
+  var tabs = document.querySelectorAll('#studentLogin .tab');
+  
+  if (tab === 'login') {
+    loginForm.style.display = 'block';
+    registerForm.style.display = 'none';
+    tabs[0].classList.add('active');
+    tabs[1].classList.remove('active');
+  } else {
+    loginForm.style.display = 'none';
+    registerForm.style.display = 'block';
+    tabs[0].classList.remove('active');
+    tabs[1].classList.add('active');
+  }
+  document.getElementById('studentMsg').innerHTML = '';
+  document.getElementById('studentLoginMsg').innerHTML = '';
+}
+
+function toggleTeacherTab(tab) {
+  var loginForm = document.getElementById('teacherLoginForm');
+  var registerForm = document.getElementById('teacherRegisterForm');
+  var tabs = document.querySelectorAll('#teacherLogin .tab');
+  
+  if (tab === 'login') {
+    loginForm.style.display = 'block';
+    registerForm.style.display = 'none';
+    tabs[0].classList.add('active');
+    tabs[1].classList.remove('active');
+  } else {
+    loginForm.style.display = 'none';
+    registerForm.style.display = 'block';
+    tabs[0].classList.remove('active');
+    tabs[1].classList.add('active');
+  }
+  document.getElementById('teacherMsg').innerHTML = '';
+  document.getElementById('teacherLoginMsg').innerHTML = '';
+}
+
+function studentRegister() {
+  var name = document.getElementById('rsName').value.trim();
+  var phone = document.getElementById('rsPhone').value.trim();
+  var dept = document.getElementById('rsDept').value;
+  var reg = parseInt(document.getElementById('rsReg').value.trim());
+  var pass = document.getElementById('rsPass').value;
+
+  if (!name || !reg || !pass || !dept) {
+    showMessage('studentMsg', 'Please fill all required fields', 'error');
+    return;
+  }
+
+  if (pass.length < 4) {
+    showMessage('studentMsg', 'Password must be at least 4 characters', 'error');
+    return;
+  }
+
+  if (isNaN(reg) || reg < 1225 || reg > 1885) {
+    showMessage('studentMsg', 'Register number must be between 1225-1885', 'error');
+    return;
+  }
+
+  if (phone && !validatePhone(phone)) {
+    showMessage('studentMsg', 'Please enter a valid 10-digit mobile number', 'error');
+    return;
+  }
+
+  showLoading();
+  
+  setTimeout(function() {
+    try {
+      var existing = DB.query('students', function(s) { return s.reg === reg; });
+      if (existing.length > 0) {
+        showMessage('studentMsg', 'This register number is already registered', 'warning');
+        showLoading(false);
+        return;
+      }
+
+      DB.insert('students', {
+        id: Date.now(),
+        name: name,
+        phone: phone,
+        dept: dept,
+        reg: reg,
+        pass: pass,
+        createdAt: new Date().toISOString()
+      });
+      
+      document.getElementById('rsName').value = '';
+      document.getElementById('rsPhone').value = '';
+      document.getElementById('rsDept').selectedIndex = 0;
+      document.getElementById('rsReg').value = '';
+      document.getElementById('rsPass').value = '';
+      
+      showMessage('studentMsg', 'Registration successful! You can now login.', 'success');
+      showToast('Success', 'Account created successfully!', 'success');
+    } catch (error) {
+      showMessage('studentMsg', 'Registration failed. Please try again.', 'error');
+    }
+    
+    showLoading(false);
+  }, 300);
+}
+
+function teacherRegister() {
+  var name = document.getElementById('rtName').value.trim();
+  var phone = document.getElementById('rtPhone').value.trim();
+  var dept = document.getElementById('rtDept').value;
+  var pass = document.getElementById('rtPass').value;
+
+  if (!name || !phone || !pass || !dept) {
+    showMessage('teacherMsg', 'Please fill all required fields', 'error');
+    return;
+  }
+
+  if (pass.length < 4) {
+    showMessage('teacherMsg', 'Password must be at least 4 characters', 'error');
+    return;
+  }
+
+  if (!validatePhone(phone)) {
+    showMessage('teacherMsg', 'Please enter a valid 10-digit mobile number', 'error');
+    return;
+  }
+
+  showLoading();
+  
+  setTimeout(function() {
+    try {
+      var existing = DB.query('teachers', function(t) { return t.phone === phone; });
+      if (existing.length > 0) {
+        showMessage('teacherMsg', 'This mobile number is already registered', 'warning');
+        showLoading(false);
+        return;
+      }
+
+      DB.insert('teachers', {
+        id: Date.now(),
+        name: name,
+        phone: phone,
+        dept: dept,
+        pass: pass,
+        createdAt: new Date().toISOString()
+      });
+      
+      document.getElementById('rtName').value = '';
+      document.getElementById('rtPhone').value = '';
+      document.getElementById('rtDept').selectedIndex = 0;
+      document.getElementById('rtPass').value = '';
+      
+      showMessage('teacherMsg', 'Registration successful! You can now login.', 'success');
+      showToast('Success', 'Account created successfully!', 'success');
+    } catch (error) {
+      showMessage('teacherMsg', 'Registration failed. Please try again.', 'error');
+    }
+    
+    showLoading(false);
+  }, 300);
+}
+
+function studentLogin() {
+  var reg = parseInt(document.getElementById('sReg').value.trim());
+  var pass = document.getElementById('sPass').value;
+
+  if (!reg || !pass) {
+    showMessage('studentLoginMsg', 'Please enter both register number and password', 'error');
+    return;
+  }
+
+  showLoading();
+  
+  setTimeout(function() {
+    try {
+      var students = DB.query('students', function(s) { return s.reg === reg; });
+      
+      if (students.length === 0) {
+        showMessage('studentLoginMsg', 'Register number not found. Please register first.', 'error');
+        showLoading(false);
+        return;
+      }
+      
+      var user = students[0];
+      
+      if (user.pass !== pass) {
+        showMessage('studentLoginMsg', 'Invalid password. Please try again.', 'error');
+        showLoading(false);
+        return;
+      }
+      
+      currentUser = user;
+      userType = 'student';
+      document.getElementById('sReg').value = '';
+      document.getElementById('sPass').value = '';
+      
+      showToast('Welcome', 'Hello ' + user.name + '!', 'success');
+      loadStudentPortal();
+    } catch (error) {
+      showMessage('studentLoginMsg', 'Login failed. Please try again.', 'error');
+    }
+    
+    showLoading(false);
+  }, 300);
+}
+
+function teacherLogin() {
+  var phone = document.getElementById('tPhone').value.trim();
+  var pass = document.getElementById('tPass').value;
+
+  if (!phone || !pass) {
+    showMessage('teacherLoginMsg', 'Please enter both mobile number and password', 'error');
+    return;
+  }
+
+  showLoading();
+  
+  setTimeout(function() {
+    try {
+      var teachers = DB.query('teachers', function(t) { return t.phone === phone; });
+      
+      if (teachers.length === 0) {
+        showMessage('teacherLoginMsg', 'Mobile number not found. Please register first.', 'error');
+        showLoading(false);
+        return;
+      }
+      
+      var user = teachers[0];
+      
+      if (user.pass !== pass) {
+        showMessage('teacherLoginMsg', 'Invalid password. Please try again.', 'error');
+        showLoading(false);
+        return;
+      }
+      
+      currentUser = user;
+      userType = 'teacher';
+      document.getElementById('tPhone').value = '';
+      document.getElementById('tPass').value = '';
+      
+      showToast('Welcome', 'Hello ' + user.name + '!', 'success');
+      loadTeacherPortal();
+    } catch (error) {
+      showMessage('teacherLoginMsg', 'Login failed. Please try again.', 'error');
+    }
+    
+    showLoading(false);
+  }, 300);
+}
+
+function loadStudentPortal() {
+  document.getElementById('studentName').textContent = '👋 Welcome, ' + currentUser.name + '!';
+  document.getElementById('studentInfo').textContent = 'Department: ' + currentUser.dept + ' | Register No: ' + currentUser.reg;
+  
+  updateLeaveStats();
+  displayLeaveRequests();
+  updateNotificationBadge();
+  initializeAttendanceData();
+  initializeCalendarView();
+  showPage('studentPortal');
+}
+
+function loadTeacherPortal() {
+  document.getElementById('teacherName').textContent = '👋 Welcome, ' + currentUser.name + '!';
+  document.getElementById('teacherInfo').textContent = 'Department: ' + currentUser.dept + ' | Managing student leave requests & attendance';
+  
+  updateTeacherStats();
+  displayTeacherRequests();
+  initializeTeacherAttendance();
+  showPage('teacherPortal');
+}
+
+// Teacher Tab Switching
+function switchTeacherTab(tab) {
+  var requestsTab = document.getElementById('requestsTeacherTabContent');
+  var markingTab = document.getElementById('markingTabContent');
+  var dashboardTab = document.getElementById('dashboardTabContent');
+  var analyticsTab = document.getElementById('analyticsTabContent');
+  var requestsBtn = document.getElementById('requestsTeacherTab');
+  var markingBtn = document.getElementById('markingTab');
+  var dashboardBtn = document.getElementById('dashboardTab');
+  var analyticsBtn = document.getElementById('analyticsTab');
+  
+  // Hide all tabs
+  requestsTab.style.display = 'none';
+  markingTab.style.display = 'none';
+  dashboardTab.style.display = 'none';
+  analyticsTab.style.display = 'none';
+  
+  // Remove active class from all buttons
+  requestsBtn.classList.remove('active');
+  markingBtn.classList.remove('active');
+  dashboardBtn.classList.remove('active');
+  analyticsBtn.classList.remove('active');
+  
+  // Show selected tab
+  if (tab === 'requests') {
+    requestsTab.style.display = 'block';
+    requestsBtn.classList.add('active');
+  } else if (tab === 'marking') {
+    markingTab.style.display = 'block';
+    markingBtn.classList.add('active');
+    loadMarkingInterface();
+  } else if (tab === 'dashboard') {
+    dashboardTab.style.display = 'block';
+    dashboardBtn.classList.add('active');
+    initializeDashboardDateRange();
+    updateAttendanceDashboard();
+  } else if (tab === 'analytics') {
+    analyticsTab.style.display = 'block';
+    analyticsBtn.classList.add('active');
+    initializeAnalytics();
+  }
+}
+
+// Initialize teacher attendance interface
+function initializeTeacherAttendance() {
+  // Set today's date in attendance date picker
+  var today = new Date().toISOString().split('T')[0];
+  var attendanceDateInput = document.getElementById('attendanceDate');
+  if (attendanceDateInput) {
+    attendanceDateInput.value = today;
+  }
+}
+
+// Load marking interface
+function loadMarkingInterface() {
+  var selectedDate = document.getElementById('attendanceDate').value;
+  if (!selectedDate) {
+    showMessage('attendanceMsg', 'Please select a date', 'error');
+    return;
+  }
+  
+  var students = DB.query('students', function(s) { return s.dept === currentUser.dept; });
+  var container = document.getElementById('studentAttendanceList');
+  
+  if (students.length === 0) {
+    container.innerHTML = '<div class="empty-state"><p>No students in your department</p></div>';
+    return;
+  }
+  
+  var html = '';
+  for (var i = 0; i < students.length; i++) {
+    var student = students[i];
+    var existingRecord = DB.query('attendanceMarked', function(a) {
+      return a.studentReg === student.reg && a.date === selectedDate;
+    });
+    
+    var status = existingRecord.length > 0 ? existingRecord[0].status : '';
+    
+    html += 
+      '<div class="student-attendance-item" data-reg="' + student.reg + '">' +
+        '<div class="student-info">' +
+          '<div class="student-name">' + student.name + '</div>' +
+          '<div class="student-reg">Reg: ' + student.reg + '</div>' +
+        '</div>' +
+        '<div class="attendance-toggle">' +
+          '<button class="attendance-btn present ' + (status === 'present' ? 'active' : '') + '" onclick="setAttendanceStatus(' + student.reg + ', \'present\')">✓ Present</button>' +
+          '<button class="attendance-btn absent ' + (status === 'absent' ? 'active' : '') + '" onclick="setAttendanceStatus(' + student.reg + ', \'absent\')">✕ Absent</button>' +
+          '<button class="attendance-btn leave ' + (status === 'leave' ? 'active' : '') + '" onclick="setAttendanceStatus(' + student.reg + ', \'leave\')">🏥 Leave</button>' +
+        '</div>' +
+      '</div>';
+  }
+  
+  container.innerHTML = html;
+}
+
+// Set attendance status for a student
+function setAttendanceStatus(studentReg, status) {
+  var buttons = document.querySelectorAll('[data-reg="' + studentReg + '"] .attendance-btn');
+  for (var i = 0; i < buttons.length; i++) {
+    buttons[i].classList.remove('active');
+  }
+  
+  event.target.classList.add('active');
+  event.target.dataset.status = status;
+}
+
+// Save attendance for all students
+function saveAttendance() {
+  var selectedDate = document.getElementById('attendanceDate').value;
+  if (!selectedDate) {
+    showMessage('attendanceMsg', 'Please select a date', 'error');
+    return;
+  }
+  
+  var items = document.querySelectorAll('.student-attendance-item');
+  var count = 0;
+  
+  for (var i = 0; i < items.length; i++) {
+    var item = items[i];
+    var studentReg = parseInt(item.dataset.reg);
+    var activeBtn = item.querySelector('.attendance-btn.active');
+    
+    if (activeBtn) {
+      var status = activeBtn.textContent.toLowerCase();
+      if (status.includes('present')) status = 'present';
+      else if (status.includes('absent')) status = 'absent';
+      else if (status.includes('leave')) status = 'leave';
+      
+      // Check if record exists
+      var existing = DB.query('attendanceMarked', function(a) {
+        return a.studentReg === studentReg && a.date === selectedDate;
+      });
+      
+      if (existing.length > 0) {
+        DB.update('attendanceMarked', function(a) {
+          return a.studentReg === studentReg && a.date === selectedDate;
+        }, { status: status, markedBy: currentUser.phone, markedAt: new Date().toISOString() });
+      } else {
+        DB.insert('attendanceMarked', {
+          id: Date.now() + Math.random(),
+          studentReg: studentReg,
+          date: selectedDate,
+          status: status,
+          markedBy: currentUser.phone,
+          markedAt: new Date().toISOString()
+        });
+      }
+      count++;
+    }
+  }
+  
+  if (count > 0) {
+    showMessage('attendanceMsg', 'Attendance saved for ' + count + ' students!', 'success');
+    showToast('Success', 'Attendance saved successfully', 'success');
+  } else {
+    showMessage('attendanceMsg', 'Please mark attendance for at least one student', 'error');
+  }
+}
+
+// Initialize dashboard date range
+function initializeDashboardDateRange() {
+  var today = new Date();
+  var firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+  var toDate = document.getElementById('dashToDate');
+  var fromDate = document.getElementById('dashFromDate');
+  
+  toDate.value = today.toISOString().split('T')[0];
+  fromDate.value = firstDay.toISOString().split('T')[0];
+}
+
+// Update attendance dashboard
+function updateAttendanceDashboard() {
+  var fromDate = document.getElementById('dashFromDate').value;
+  var toDate = document.getElementById('dashToDate').value;
+  
+  if (!fromDate || !toDate) return;
+  
+  var students = DB.query('students', function(s) { return s.dept === currentUser.dept; });
+  var allMarked = DB.query('attendanceMarked', function(a) { return true; });
+  
+  // Count days between dates
+  var from = new Date(fromDate);
+  var to = new Date(toDate);
+  var totalDays = 0;
+  
+  for (var d = new Date(from); d <= to; d.setDate(d.getDate() + 1)) {
+    var day = d.getDay();
+    if (day !== 0 && day !== 6) { // Exclude weekends
+      totalDays++;
+    }
+  }
+  
+  // Calculate statistics
+  var totalPresent = 0;
+  var studentStats = {};
+  
+  for (var i = 0; i < students.length; i++) {
+    var student = students[i];
+    studentStats[student.reg] = { present: 0, absent: 0, leave: 0, name: student.name };
+  }
+  
+  for (var i = 0; i < allMarked.length; i++) {
+    var record = allMarked[i];
+    if (record.date >= fromDate && record.date <= toDate && studentStats[record.studentReg]) {
+      if (record.status === 'present') {
+        studentStats[record.studentReg].present++;
+        totalPresent++;
+      } else if (record.status === 'absent') {
+        studentStats[record.studentReg].absent++;
+      } else if (record.status === 'leave') {
+        studentStats[record.studentReg].leave++;
+      }
+    }
+  }
+  
+  var classAvg = students.length > 0 ? Math.round((totalPresent / (students.length * totalDays)) * 100) : 0;
+  var highAttendance = 0;
+  
+  for (var reg in studentStats) {
+    var stat = studentStats[reg];
+    var percentage = totalDays > 0 ? Math.round(((stat.present) / (totalDays)) * 100) : 0;
+    if (percentage >= 75) highAttendance++;
+  }
+  
+  document.getElementById('dashTotalDays').textContent = totalDays;
+  document.getElementById('dashAvgAttendance').textContent = classAvg + '%';
+  document.getElementById('dashTotalStudents').textContent = students.length;
+  document.getElementById('dashHighAttendance').textContent = highAttendance;
+  
+  // Display student summary
+  var summaryContainer = document.getElementById('studentAttendanceSummary');
+  var html = '';
+  
+  for (var reg in studentStats) {
+    var stat = studentStats[reg];
+    var percentage = totalDays > 0 ? Math.round(((stat.present) / (totalDays)) * 100) : 0;
+    var statusColor = percentage >= 75 ? 'present' : (percentage >= 60 ? 'warning' : 'absent');
+    
+    html += 
+      '<div class="student-summary-item">' +
+        '<div class="summary-col">' +
+          '<div class="summary-label">Student</div>' +
+          '<div class="summary-value">' + stat.name + '</div>' +
+        '</div>' +
+        '<div class="summary-col">' +
+          '<div class="summary-label">Present</div>' +
+          '<div class="summary-value present">' + stat.present + '/' + totalDays + '</div>' +
+        '</div>' +
+        '<div class="summary-col">' +
+          '<div class="summary-label">Absent</div>' +
+          '<div class="summary-value absent">' + stat.absent + '</div>' +
+        '</div>' +
+        '<div class="summary-col">' +
+          '<div class="summary-label">Attendance %</div>' +
+          '<div class="summary-value percentage">' + percentage + '%</div>' +
+        '</div>' +
+      '</div>';
+  }
+  
+  summaryContainer.innerHTML = html;
+}
+
+function updateLeaveStats() {
+  showLoading();
+  setTimeout(function() {
+    var userRequests = DB.query('leaveRequests', function(r) { return r.studentReg === currentUser.reg; });
+    
+    document.getElementById('totalRequests').textContent = userRequests.length;
+    document.getElementById('approvedCount').textContent = userRequests.filter(function(r) { return r.status === 'approved'; }).length;
+    document.getElementById('pendingCount').textContent = userRequests.filter(function(r) { return r.status === 'pending'; }).length;
+    document.getElementById('rejectedCount').textContent = userRequests.filter(function(r) { return r.status === 'rejected'; }).length;
+    showLoading(false);
+  }, 300);
+}
+
+function updateTeacherStats() {
+  showLoading();
+  setTimeout(function() {
+    var students = DB.query('students', function(s) { return s.dept === currentUser.dept; });
+    var studentRegs = students.map(function(s) { return s.reg; });
+    var deptRequests = DB.query('leaveRequests', function(r) { return studentRegs.indexOf(r.studentReg) !== -1; });
+    
+    document.getElementById('tTotalRequests').textContent = deptRequests.length;
+    document.getElementById('tPendingCount').textContent = deptRequests.filter(function(r) { return r.status === 'pending'; }).length;
+    document.getElementById('tApprovedCount').textContent = deptRequests.filter(function(r) { return r.status === 'approved'; }).length;
+    document.getElementById('tRejectedCount').textContent = deptRequests.filter(function(r) { return r.status === 'rejected'; }).length;
+    showLoading(false);
+  }, 300);
+}
+
+// Filter functions
+function filterStudentRequests(status) {
+  currentStudentFilter = status;
+  
+  // Update active filter button
+  var filterBtns = document.querySelectorAll('#studentPortal .filter-btn');
+  for (var i = 0; i < filterBtns.length; i++) {
+    filterBtns[i].classList.remove('active');
+    if (filterBtns[i].textContent.toLowerCase().includes(status === 'all' ? 'all' : status)) {
+      filterBtns[i].classList.add('active');
+    }
+  }
+  
+  displayLeaveRequests();
+}
+
+function filterTeacherRequests(status) {
+  currentTeacherFilter = status;
+  
+  // Update active filter button
+  var filterBtns = document.querySelectorAll('#teacherPortal .filter-btn');
+  for (var i = 0; i < filterBtns.length; i++) {
+    filterBtns[i].classList.remove('active');
+    if (filterBtns[i].textContent.toLowerCase().includes(status === 'all' ? 'all' : status)) {
+      filterBtns[i].classList.add('active');
+    }
+  }
+  
+  displayTeacherRequests();
+}
+
+function displayLeaveRequests() {
+  showLoading();
+  setTimeout(function() {
+    var userRequests = DB.query('leaveRequests', function(r) { return r.studentReg === currentUser.reg; });
+    
+    // Apply filter
+    var filteredRequests = userRequests;
+    if (currentStudentFilter !== 'all') {
+      filteredRequests = userRequests.filter(function(r) { return r.status === currentStudentFilter; });
+    }
+    
+    var container = document.getElementById('leaveRequestsList');
+    
+    if (filteredRequests.length === 0) {
+      container.innerHTML = 
+        '<div class="empty-state">' +
+          '<div class="empty-state-icon">📋</div>' +
+          '<p>No ' + (currentStudentFilter === 'all' ? '' : currentStudentFilter) + ' leave requests</p>' +
+          '<p style="font-size: 12px; margin-top: 8px;">' + (currentStudentFilter === 'all' ? 'Click "Apply for Leave" to submit your first request' : 'Try a different filter') + '</p>' +
+        '</div>';
+      showLoading(false);
+      return;
+    }
+    
+    var html = '';
+    for (var i = filteredRequests.length - 1; i >= 0; i--) {
+      var req = filteredRequests[i];
+      var statusIcon = req.status === 'pending' ? '⏳' : (req.status === 'approved' ? '✓' : '✕');
+      
+      html += '<div class="card fade-in">' +
+        '<div class="card-header">' +
+          '<div class="card-title">📅 ' + formatDate(req.date) + '</div>' +
+          '<span class="badge ' + req.status + '">' + statusIcon + ' ' + req.status + '</span>' +
+        '</div>' +
+        '<div class="card-content">' + req.reason + '</div>';
+      
+      if (req.proofFile) {
+        html += '<div class="card-meta">📎 Proof attached: ' + req.proofFile.name + '</div>';
+      }
+      if (req.parentLetter) {
+        html += '<div class="card-meta">📎 Parent\'s letter attached: ' + req.parentLetter.name + '</div>';
+      }
+      
+      html += '<div class="card-meta">🕒 Submitted: ' + new Date(req.submittedAt).toLocaleString() + '</div>';
+      
+      if (req.approvedBy) {
+        html += '<div class="card-meta" style="color: var(--success);">✓ Approved by: ' + req.approvedBy + ' on ' + new Date(req.approvedAt).toLocaleDateString() + '</div>';
+      }
+      if (req.rejectedBy) {
+        html += '<div class="card-meta" style="color: var(--danger);">✕ Rejected by: ' + req.rejectedBy + ' on ' + new Date(req.rejectedAt).toLocaleDateString() + '</div>';
+      }
+      
+      html += '</div>';
+    }
+    
+    container.innerHTML = html;
+    showLoading(false);
+  }, 300);
+}
+
+function displayTeacherRequests() {
+  showLoading();
+  setTimeout(function() {
+    var students = DB.query('students', function(s) { return s.dept === currentUser.dept; });
+    var studentRegs = students.map(function(s) { return s.reg; });
+    var deptRequests = DB.query('leaveRequests', function(r) { return studentRegs.indexOf(r.studentReg) !== -1; });
+    
+    // Apply filter
+    var filteredDeptRequests = deptRequests;
+    if (currentTeacherFilter !== 'all') {
+      filteredDeptRequests = deptRequests.filter(function(r) { return r.status === currentTeacherFilter; });
+    }
+    
+    var container = document.getElementById('teacherRequestsList');
+    
+    if (filteredDeptRequests.length === 0) {
+      container.innerHTML = 
+        '<div class="empty-state">' +
+          '<div class="empty-state-icon">📭</div>' +
+          '<p>No ' + (currentTeacherFilter === 'all' ? '' : currentTeacherFilter) + ' leave requests</p>' +
+          '<p style="font-size: 12px; margin-top: 8px;">' + (currentTeacherFilter === 'all' ? 'Students haven\'t submitted any requests' : 'Try a different filter') + '</p>' +
+        '</div>';
+      showLoading(false);
+      return;
+    }
+    
+    // Sort by date - pending first, then by submission time
+    var sortedRequests = filteredDeptRequests.sort(function(a, b) {
+      if (a.status === 'pending' && b.status !== 'pending') return -1;
+      if (a.status !== 'pending' && b.status === 'pending') return 1;
+      return new Date(b.submittedAt) - new Date(a.submittedAt);
+    });
+    
+    var html = '';
+    for (var i = 0; i < sortedRequests.length; i++) {
+      var req = sortedRequests[i];
+      var isPending = req.status === 'pending';
+      var statusIcon = req.status === 'pending' ? '⏳' : (req.status === 'approved' ? '✓' : '✕');
+      
+      // Determine AI category color and icon
+      var aiCategoryColor = '';
+      var categoryIcon = '';
+      if (req.aiCategory) {
+        switch (req.aiCategory) {
+          case 'Medical':
+            aiCategoryColor = 'ai-medical';
+            categoryIcon = '🏥';
+            break;
+          case 'Emergency':
+            aiCategoryColor = 'ai-emergency';
+            categoryIcon = '🚨';
+            break;
+          case 'Personal':
+            aiCategoryColor = 'ai-personal';
+            categoryIcon = '👨‍👩‍👧';
+            break;
+          case 'Academic':
+            aiCategoryColor = 'ai-academic';
+            categoryIcon = '📚';
+            break;
+          case 'Suspicious':
+            aiCategoryColor = 'ai-suspicious';
+            categoryIcon = '⚠️';
+            break;
+          default:
+            aiCategoryColor = 'ai-personal';
+            categoryIcon = '❓';
+        }
+      }
+      
+      // Determine priority color
+      var priorityColor = '';
+      if (req.aiPriority) {
+        switch (req.aiPriority) {
+          case 'High':
+            priorityColor = 'priority-high';
+            break;
+          case 'Normal':
+            priorityColor = 'priority-normal';
+            break;
+          case 'Low':
+            priorityColor = 'priority-low';
+            break;
+          default:
+            priorityColor = 'priority-normal';
+        }
+      }
+      
+      html += '<div class="card fade-in">' +
+        '<div class="card-title">👤 ' + req.studentName + ' <span style="color: #64748b; font-size: 14px; font-weight: normal;">(Reg: ' + req.studentReg + ')</span></div>' +
+        '<div class="card-header" style="margin-top: 8px;">' +
+          '<div style="color: #cbd5e1; font-size: 14px;">📅 ' + formatDate(req.date) + '</div>' +
+          '<span class="badge ' + req.status + '">' + statusIcon + ' ' + req.status + '</span>' +
+        '</div>';
+      
+      // Add AI Classification Info
+      if (req.aiCategory) {
+        html += '<div class="ai-info">' +
+          '<span class="ai-badge ' + aiCategoryColor + '">' + categoryIcon + ' ' + req.aiCategory + '</span>' +
+          '<span class="priority-badge ' + priorityColor + '">' + req.aiPriority + ' Priority</span>' +
+          '<span class="confidence-score">📊 ' + parseFloat(req.aiConfidence).toFixed(1) + '%</span>' +
+        '</div>';
+      }
+      
+      html += '<div class="card-content"><strong>Reason:</strong> ' + req.reason + '</div>';
+      
+      if (req.proofFile) {
+        html += '<div class="card-meta">📎 Proof: <a href="#" onclick="viewFile(\'' + req.proofFile.data + '\', \'' + req.proofFile.name + '\'); return false;" style="color: var(--primary); text-decoration: underline;">' + req.proofFile.name + '</a></div>';
+      }
+      if (req.parentLetter) {
+        html += '<div class="card-meta">📎 Parent\'s Letter: <a href="#" onclick="viewFile(\'' + req.parentLetter.data + '\', \'' + req.parentLetter.name + '\'); return false;" style="color: var(--primary); text-decoration: underline;">' + req.parentLetter.name + '</a></div>';
+      }
+      
+      html += '<div class="card-meta">🕒 Submitted: ' + new Date(req.submittedAt).toLocaleString() + '</div>';
+      
+      if (isPending) {
+        html += 
+          '<div class="btn-group" style="margin-top: 16px;">' +
+            '<button class="btn success" onclick="handleApprove(\'' + req.studentReg + '\', \'' + req.submittedAt + '\')">✓ Approve</button>' +
+            '<button class="btn danger" onclick="handleReject(\'' + req.studentReg + '\', \'' + req.submittedAt + '\')">✕ Reject</button>' +
+          '</div>';
+      } else {
+        if (req.approvedBy) {
+          html += '<div class="card-meta" style="color: var(--success); margin-top: 8px;">✓ Approved by: ' + req.approvedBy + ' on ' + new Date(req.approvedAt).toLocaleDateString() + '</div>';
+        }
+        if (req.rejectedBy) {
+          html += '<div class="card-meta" style="color: var(--danger); margin-top: 8px;">✕ Rejected by: ' + req.rejectedBy + ' on ' + new Date(req.rejectedAt).toLocaleDateString() + '</div>';
+        }
+      }
+      
+      html += '</div>';
+    }
+    
+    container.innerHTML = html;
+    showLoading(false);
+  }, 300);
+}
+
+function handleApprove(studentReg, submittedAt) {
+  if (confirm('Are you sure you want to APPROVE this leave request?')) {
+    approveRequest(studentReg, submittedAt);
+  }
+}
+
+function handleReject(studentReg, submittedAt) {
+  if (confirm('Are you sure you want to REJECT this leave request?')) {
+    rejectRequest(studentReg, submittedAt);
+  }
+}
+
+function approveRequest(studentReg, submittedAt) {
+  showLoading();
+  setTimeout(function() {
+    try {
+      // Ensure studentReg is a number (onclick may pass it as a string)
+      studentReg = parseInt(studentReg);
+      var request = DB.query('leaveRequests', function(r) {
+        return r.studentReg === studentReg && r.submittedAt === submittedAt;
+      });
+      
+      if (request.length === 0) {
+        showToast('Error', 'Request not found', 'error');
+        showLoading(false);
+        return;
+      }
+      
+      var updated = DB.update('leaveRequests', 
+        function(r) { return r.studentReg === studentReg && r.submittedAt === submittedAt; },
+        { 
+          status: 'approved', 
+          approvedBy: currentUser.name, 
+          approvedAt: new Date().toISOString() 
+        }
+      );
+      
+      if (updated) {
+        // Add notification for student
+        addNotification(
+          studentReg,
+          'approved',
+          'Leave Request Approved ✅',
+          'Your leave request for ' + formatDate(updated.date) + ' has been approved by ' + currentUser.name + '.'
+        );
+        
+        updateTeacherStats();
+        displayTeacherRequests();
+        showToast('Success', 'Leave request approved successfully!', 'success');
+      } else {
+        showToast('Error', 'Failed to approve request', 'error');
+      }
+    } catch (error) {
+      console.error('Approve error:', error);
+      showToast('Error', 'Failed to approve request', 'error');
+    }
+    showLoading(false);
+  }, 300);
+}
+
+function rejectRequest(studentReg, submittedAt) {
+  showLoading();
+  setTimeout(function() {
+    try {
+      // Ensure studentReg is a number (onclick may pass it as a string)
+      studentReg = parseInt(studentReg);
+      var request = DB.query('leaveRequests',
+        function(r) { return r.studentReg === studentReg && r.submittedAt === submittedAt; }
+      );
+      
+      if (request.length === 0) {
+        showToast('Error', 'Request not found', 'error');
+        showLoading(false);
+        return;
+      }
+      
+      var updated = DB.update('leaveRequests',
+        function(r) { return r.studentReg === studentReg && r.submittedAt === submittedAt; },
+        { 
+          status: 'rejected', 
+          rejectedBy: currentUser.name, 
+          rejectedAt: new Date().toISOString() 
+        }
+      );
+      
+      if (updated) {
+        // Add notification for student
+        addNotification(
+          studentReg,
+          'rejected',
+          'Leave Request Rejected ❌',
+          'Your leave request for ' + formatDate(updated.date) + ' has been rejected by ' + currentUser.name + '.'
+        );
+        
+        updateTeacherStats();
+        displayTeacherRequests();
+        showToast('Info', 'Leave request rejected', 'warning');
+      } else {
+        showToast('Error', 'Failed to reject request', 'error');
+      }
+    } catch (error) {
+      console.error('Reject error:', error);
+      showToast('Error', 'Failed to reject request', 'error');
+    }
+    showLoading(false);
+  }, 300);
+}
+
+function showLeaveForm() {
+  document.getElementById('leaveFormSection').style.display = 'block';
+  document.getElementById('leaveDate').value = '';
+  document.getElementById('leaveReason').value = '';
+  document.getElementById('proofFile').value = '';
+  document.getElementById('parentLetter').value = '';
+  document.getElementById('leaveMsg').innerHTML = '';
+}
+
+function hideLeaveForm() {
+  document.getElementById('leaveFormSection').style.display = 'none';
+}
+
+function submitLeaveRequest() {
+  var date = document.getElementById('leaveDate').value;
+  var reason = document.getElementById('leaveReason').value.trim();
+  var proofFile = document.getElementById('proofFile').files[0];
+  var parentLetter = document.getElementById('parentLetter').files[0];
+  
+  if (!date || !reason) {
+    showMessage('leaveMsg', 'Please fill all required fields', 'error');
+    return;
+  }
+  
+  if (reason.length < 10) {
+    showMessage('leaveMsg', 'Please provide a detailed reason (minimum 10 characters)', 'error');
+    return;
+  }
+  
+  // File size validation (5MB max)
+  if (proofFile && proofFile.size > 5 * 1024 * 1024) {
+    showMessage('leaveMsg', 'Proof file is too large. Maximum size is 5MB', 'error');
+    return;
+  }
+  
+  if (parentLetter && parentLetter.size > 5 * 1024 * 1024) {
+    showMessage('leaveMsg', 'Parent letter file is too large. Maximum size is 5MB', 'error');
+    return;
+  }
+  
+  showLoading();
+  
+  // Analyze reason with AI
+  var analysis = analyzeReason(reason);
+  
+  var leaveData = {
+    id: Date.now(),
+    studentReg: currentUser.reg,
+    studentName: currentUser.name,
+    date: date,
+    reason: reason,
+    status: 'pending',
+    submittedAt: new Date().toISOString(),
+    aiCategory: analysis.category,
+    aiPriority: analysis.priority,
+    aiConfidence: analysis.confidence
+  };
+  
+  var processFiles = function() {
+    try {
+      DB.insert('leaveRequests', leaveData);
+      
+      showMessage('leaveMsg', 'Leave request submitted successfully!', 'success');
+      showToast('Success', 'Your leave request has been submitted for approval', 'success');
+      
+      setTimeout(function() {
+        hideLeaveForm();
+        updateLeaveStats();
+        displayLeaveRequests();
+      }, 1500);
+    } catch (error) {
+      console.error('Submit error:', error);
+      showMessage('leaveMsg', 'Failed to submit request. Please try again.', 'error');
+    }
+    
+    showLoading(false);
+  };
+  
+  // Convert files to base64 for storage
+  var filesProcessed = 0;
+  var totalFiles = (proofFile ? 1 : 0) + (parentLetter ? 1 : 0);
+  
+  if (totalFiles === 0) {
+    processFiles();
+    return;
+  }
+  
+  var checkComplete = function() {
+    filesProcessed++;
+    if (filesProcessed === totalFiles) {
+      processFiles();
+    }
+  };
+  
+  if (proofFile) {
+    fileToBase64(proofFile, function(proofData) {
+      leaveData.proofFile = {
+        name: proofFile.name,
+        type: proofFile.type,
+        data: proofData
+      };
+      checkComplete();
+    });
+  }
+  
+  if (parentLetter) {
+    fileToBase64(parentLetter, function(letterData) {
+      leaveData.parentLetter = {
+        name: parentLetter.name,
+        type: parentLetter.type,
+        data: letterData
+      };
+      checkComplete();
+    });
+  }
+}
+
+// Helper function to convert file to base64
+function fileToBase64(file, callback) {
+  var reader = new FileReader();
+  reader.onload = function() {
+    callback(reader.result);
+  };
+  reader.onerror = function() {
+    console.error('File read error');
+    callback(null);
+  };
+  reader.readAsDataURL(file);
+}
+
+// Helper function to view uploaded files
+function viewFile(dataUrl, fileName) {
+  var newWindow = window.open();
+  if (!newWindow) {
+    alert('Please allow popups to view the file');
+    return;
+  }
+  
+  var html = '<html><head><title>' + fileName + '</title></head><body style="margin:0">';
+  
+  if (fileName.toLowerCase().endsWith('.pdf')) {
+    html += '<embed src="' + dataUrl + '" width="100%" height="100%" type="application/pdf">';
+  } else {
+    html += '<div style="display:flex; justify-content:center; align-items:center; background:#000; min-height:100vh;">';
+    html += '<img src="' + dataUrl + '" style="max-width:100%; max-height:100vh;">';
+    html += '</div>';
+  }
+  
+  html += '</body></html>';
+  newWindow.document.write(html);
+}
+
+function showChangePassword(type) {
+  previousPage = type === 'student' ? 'studentPortal' : 'teacherPortal';
+  showPage('changePasswordModal');
+  document.getElementById('currentPass').value = '';
+  document.getElementById('newPass').value = '';
+  document.getElementById('confirmPass').value = '';
+  document.getElementById('changePassMsg').innerHTML = '';
+}
+
+function hideChangePassword() {
+  showPage(previousPage);
+}
+
+function changePassword() {
+  var currentPass = document.getElementById('currentPass').value;
+  var newPass = document.getElementById('newPass').value;
+  var confirmPass = document.getElementById('confirmPass').value;
+  
+  if (!currentPass || !newPass || !confirmPass) {
+    showMessage('changePassMsg', 'Please fill all fields', 'error');
+    return;
+  }
+  
+  if (currentUser.pass !== currentPass) {
+    showMessage('changePassMsg', 'Current password is incorrect', 'error');
+    return;
+  }
+  
+  if (newPass.length < 4) {
+    showMessage('changePassMsg', 'New password must be at least 4 characters', 'error');
+    return;
+  }
+  
+  if (newPass !== confirmPass) {
+    showMessage('changePassMsg', 'New passwords do not match', 'error');
+    return;
+  }
+  
+  showLoading();
+  
+  setTimeout(function() {
+    try {
+      if (userType === 'student') {
+        DB.update('students', function(s) { return s.reg === currentUser.reg; }, { pass: newPass });
+      } else {
+        DB.update('teachers', function(t) { return t.phone === currentUser.phone; }, { pass: newPass });
+      }
+      
+      currentUser.pass = newPass;
+      
+      showMessage('changePassMsg', 'Password changed successfully!', 'success');
+      showToast('Success', 'Your password has been updated', 'success');
+      
+      setTimeout(function() {
+        hideChangePassword();
+      }, 2000);
+    } catch (error) {
+      showMessage('changePassMsg', 'Failed to change password. Please try again.', 'error');
+    }
+    
+    showLoading(false);
+  }, 300);
+}
+
+function logout() {
+  currentUser = null;
+  userType = null;
+  currentStudentFilter = 'all';
+  currentTeacherFilter = 'all';
+  document.getElementById('notificationBadge').style.display = 'none';
+  document.getElementById('notificationPanel').classList.remove('active');
+  showPage('home');
+  showToast('Goodbye', 'You have been logged out', 'info');
+}
+
+function formatDate(dateString) {
+  var date = new Date(dateString);
+  var options = { year: 'numeric', month: 'long', day: 'numeric' };
+  return date.toLocaleDateString('en-US', options);
+}
+
+// Auto-refresh notifications periodically for students
+var notificationInterval;
+
+function startNotificationPolling() {
+  if (userType === 'student') {
+    notificationInterval = setInterval(function() {
+      updateNotificationBadge();
+    }, 30000); // Check every 30 seconds
+  }
+}
+
+function stopNotificationPolling() {
+  if (notificationInterval) {
+    clearInterval(notificationInterval);
+    notificationInterval = null;
+  }
+}
+
+// Attendance Calendar Variables
+var currentCalendarMonth = new Date();
+
+// Tab Switching for Student Portal
+function switchStudentTab(tab) {
+  var requestsTab = document.getElementById('requestsTabContent');
+  var attendanceTab = document.getElementById('attendanceTabContent');
+  var requestsBtn = document.getElementById('requestsTab');
+  var attendanceBtn = document.getElementById('attendanceTab');
+  
+  if (tab === 'requests') {
+    requestsTab.style.display = 'block';
+    attendanceTab.style.display = 'none';
+    requestsBtn.classList.add('active');
+    attendanceBtn.classList.remove('active');
+  } else {
+    requestsTab.style.display = 'none';
+    attendanceTab.style.display = 'block';
+    requestsBtn.classList.remove('active');
+    attendanceBtn.classList.add('active');
+    displayAttendanceCalendar();
+  }
+}
+
+// Initialize attendance data with sample records
+function initializeAttendanceData() {
+  var existingAttendance = DB.query('attendance', function(a) {
+    return a.studentReg === currentUser.reg;
+  });
+  
+  // Only create sample data if no attendance records exist for this student
+  if (existingAttendance.length === 0) {
+    var today = new Date();
+    var year = today.getFullYear();
+    var month = today.getMonth();
+    
+    // Generate attendance data for the current and previous month
+    for (var m = -1; m <= 0; m++) {
+      var targetMonth = new Date(year, month + m, 1);
+      var daysInMonth = new Date(year, month + m + 1, 0).getDate();
+      
+      for (var day = 1; day <= daysInMonth; day++) {
+        var currentDate = new Date(targetMonth.getFullYear(), targetMonth.getMonth(), day);
+        var dayOfWeek = currentDate.getDay();
+        
+        // Skip weekends
+        if (dayOfWeek === 0 || dayOfWeek === 6) continue;
+        
+        // Skip future dates
+        if (currentDate > today) continue;
+        
+        // Randomly assign attendance status (70% present, 20% absent, 10% on leave)
+        var rand = Math.random();
+        var status = 'present';
+        if (rand < 0.20) status = 'absent';
+        else if (rand < 0.30) status = 'leave';
+        
+        var attendance = {
+          id: Date.now() + Math.random(),
+          studentReg: currentUser.reg,
+          date: currentDate.toISOString().split('T')[0],
+          status: status
+        };
+        
+        DB.insert('attendance', attendance);
+      }
+    }
+  }
+}
+
+// Initialize calendar view
+function initializeCalendarView() {
+  currentCalendarMonth = new Date();
+  displayAttendanceCalendar();
+}
+
+// Display the attendance calendar
+// Holiday data for 2026
+var GOVERNMENT_HOLIDAYS_2026 = [
+  { date: '2026-01-26', name: 'Republic Day' },
+  { date: '2026-03-11', name: 'Maha Shivaratri' },
+  { date: '2026-03-29', name: 'Holi' },
+  { date: '2026-04-02', name: 'Good Friday' },
+  { date: '2026-04-14', name: 'Ambedkar Jayanti' },
+  { date: '2026-05-01', name: 'May Day' },
+  { date: '2026-08-15', name: 'Independence Day' },
+  { date: '2026-09-16', name: 'Milad-un-Nabi' },
+  { date: '2026-10-02', name: 'Gandhi Jayanti' },
+  { date: '2026-10-25', name: 'Dussehra' },
+  { date: '2026-11-08', name: 'Diwali' },
+  { date: '2026-11-09', name: 'Diwali (day 2)' },
+  { date: '2026-12-25', name: 'Christmas' }
+];
+
+var FESTIVAL_HOLIDAYS_2026 = [
+  { date: '2026-01-14', name: 'Makar Sankranti' },
+  { date: '2026-01-26', name: 'Republic Day' },
+  { date: '2026-03-11', name: 'Maha Shivaratri' },
+  { date: '2026-03-29', name: 'Holi' },
+  { date: '2026-03-30', name: 'Holi (day 2)' },
+  { date: '2026-04-10', name: 'Eid ul-Fitr' },
+  { date: '2026-05-25', name: 'Buddha Purnima' },
+  { date: '2026-08-15', name: 'Independence Day' },
+  { date: '2026-08-17', name: 'Janmashtami' },
+  { date: '2026-09-16', name: 'Milad-un-Nabi' },
+  { date: '2026-10-02', name: 'Gandhi Jayanti' },
+  { date: '2026-10-25', name: 'Dussehra' },
+  { date: '2026-10-29', name: 'Eid ul-Adha' },
+  { date: '2026-11-08', name: 'Diwali' },
+  { date: '2026-11-09', name: 'Govardhan Puja' },
+  { date: '2026-11-10', name: 'Bhai Dooj' },
+  { date: '2026-12-25', name: 'Christmas' }
+];
+
+// Check if date is a Sunday
+function isSunday(date) {
+  return date.getDay() === 0;
+}
+
+// Get holiday name if date is a holiday
+function getHolidayName(dateStr) {
+  for (var i = 0; i < GOVERNMENT_HOLIDAYS_2026.length; i++) {
+    if (GOVERNMENT_HOLIDAYS_2026[i].date === dateStr) {
+      return { name: GOVERNMENT_HOLIDAYS_2026[i].name, type: 'government' };
+    }
+  }
+  for (var i = 0; i < FESTIVAL_HOLIDAYS_2026.length; i++) {
+    if (FESTIVAL_HOLIDAYS_2026[i].date === dateStr) {
+      return { name: FESTIVAL_HOLIDAYS_2026[i].name, type: 'festival' };
+    }
+  }
+  return null;
+}
+
+// Check if date is a government holiday
+function isGovernmentHoliday(dateStr) {
+  for (var i = 0; i < GOVERNMENT_HOLIDAYS_2026.length; i++) {
+    if (GOVERNMENT_HOLIDAYS_2026[i].date === dateStr) {
+      return true;
+    }
+  }
+  return false;
+}
+
+// Check if date is a festival holiday
+function isFestivalHoliday(dateStr) {
+  for (var i = 0; i < FESTIVAL_HOLIDAYS_2026.length; i++) {
+    if (FESTIVAL_HOLIDAYS_2026[i].date === dateStr) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function displayAttendanceCalendar() {
+  var year = currentCalendarMonth.getFullYear();
+  var month = currentCalendarMonth.getMonth();
+  
+  // Update month display
+  var monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                    'July', 'August', 'September', 'October', 'November', 'December'];
+  document.getElementById('calendarMonth').textContent = monthNames[month] + ' ' + year;
+  
+  // Get attendance data for this month
+  var studentAttendance = DB.query('attendance', function(a) {
+    return a.studentReg === currentUser.reg;
+  });
+  
+  // Create a map of dates to attendance status
+  var attendanceMap = {};
+  for (var i = 0; i < studentAttendance.length; i++) {
+    var record = studentAttendance[i];
+    attendanceMap[record.date] = record.status;
+  }
+  
+  // Get first day of month and number of days
+  var firstDay = new Date(year, month, 1).getDay();
+  var daysInMonth = new Date(year, month + 1, 0).getDate();
+  var daysInPrevMonth = new Date(year, month, 0).getDate();
+  
+  var calendar = document.getElementById('attendanceCalendar');
+  calendar.innerHTML = '';
+  
+  // Add day labels
+  var dayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  for (var i = 0; i < 7; i++) {
+    var labelDay = document.createElement('div');
+    labelDay.className = 'calendar-day-label';
+    labelDay.textContent = dayLabels[i];
+    calendar.appendChild(labelDay);
+  }
+  
+  // Add previous month's days
+  for (var i = firstDay - 1; i >= 0; i--) {
+    var day = daysInPrevMonth - i;
+    var dateStr = getDateString(year, month - 1, day);
+    addCalendarDay(calendar, day, 'other-month', null);
+  }
+  
+  // Add current month's days
+  for (var day = 1; day <= daysInMonth; day++) {
+    var dateStr = getDateString(year, month, day);
+    var currentDate = new Date(year, month, day);
+    var dayOfWeek = currentDate.getDay();
+    var status = attendanceMap[dateStr] || null;
+    var classes = '';
+    var holidayInfo = getHolidayName(dateStr);
+    
+    // Check if it's a government holiday or festival holiday
+    if (isGovernmentHoliday(dateStr)) {
+      classes = 'government-holiday';
+    } else if (isFestivalHoliday(dateStr)) {
+      classes = 'festival-holiday';
+    } else if (isSunday(currentDate)) {
+      classes = 'sunday';
+    } else if (dayOfWeek === 6) {
+      // Saturday
+      classes = 'weekend';
+    } else if (!status) {
+      // Check if future date
+      if (currentDate > new Date()) {
+        classes = 'future';
+      }
+    } else {
+      classes = status;
+    }
+    
+    // Add today indicator
+    var today = new Date();
+    if (day === today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
+      classes += ' today';
+    }
+    
+    addCalendarDay(calendar, day, classes, status, holidayInfo);
+  }
+  
+  // Add next month's days
+  var remainingDays = 42 - (firstDay + daysInMonth); // 6 rows * 7 days
+  for (var day = 1; day <= remainingDays; day++) {
+    addCalendarDay(calendar, day, 'other-month', null);
+  }
+  
+  // Update statistics
+  updateAttendanceStats(attendanceMap, year, month);
+}
+
+// Add a day to the calendar
+function addCalendarDay(calendar, day, classes, status, holidayInfo) {
+  var dayEl = document.createElement('div');
+  dayEl.className = 'calendar-day ' + classes;
+  
+  var dayNumber = document.createElement('div');
+  dayNumber.className = 'calendar-day-number';
+  dayNumber.textContent = day;
+  dayEl.appendChild(dayNumber);
+  
+  if (status) {
+    var statusEl = document.createElement('div');
+    statusEl.className = 'calendar-day-status';
+    statusEl.textContent = status === 'present' ? '✓' : (status === 'absent' ? '✕' : '🏥');
+    dayEl.appendChild(statusEl);
+  }
+  
+  if (holidayInfo) {
+    var holidayEl = document.createElement('div');
+    holidayEl.className = 'holiday-label';
+    holidayEl.textContent = holidayInfo.type === 'government' ? '🏛️' : '🎉';
+    holidayEl.title = holidayInfo.name;
+    dayEl.appendChild(holidayEl);
+    
+    // Add tooltip
+    dayEl.title = holidayInfo.name;
+  }
+  
+  calendar.appendChild(dayEl);
+}
+
+// Get date string in YYYY-MM-DD format
+function getDateString(year, month, day) {
+  var m = String(month + 1).padStart(2, '0');
+  var d = String(day).padStart(2, '0');
+  return year + '-' + m + '-' + d;
+}
+
+// Update attendance statistics
+function updateAttendanceStats(attendanceMap, year, month) {
+  var presentCount = 0;
+  var absentCount = 0;
+  var leaveCount = 0;
+  var totalDays = 0;
+  
+  // Count only weekdays in this month
+  var daysInMonth = new Date(year, month + 1, 0).getDate();
+  for (var day = 1; day <= daysInMonth; day++) {
+    var currentDate = new Date(year, month, day);
+    var dayOfWeek = currentDate.getDay();
+    
+    // Skip weekends
+    if (dayOfWeek === 0 || dayOfWeek === 6) continue;
+    
+    // Skip future dates
+    if (currentDate > new Date()) continue;
+    
+    var dateStr = getDateString(year, month, day);
+    var status = attendanceMap[dateStr];
+    
+    totalDays++;
+    if (status === 'present') presentCount++;
+    else if (status === 'absent') absentCount++;
+    else if (status === 'leave') leaveCount++;
+  }
+  
+  var attendancePercentage = totalDays > 0 ? Math.round((presentCount / totalDays) * 100) : 0;
+  
+  var statsContainer = document.getElementById('attendanceStats');
+  statsContainer.innerHTML = 
+    '<div class="stats-item present-stat">' +
+      '<div class="stats-item-label">Present</div>' +
+      '<div class="stats-item-value">' + presentCount + '</div>' +
+    '</div>' +
+    '<div class="stats-item absent-stat">' +
+      '<div class="stats-item-label">Absent</div>' +
+      '<div class="stats-item-value">' + absentCount + '</div>' +
+    '</div>' +
+    '<div class="stats-item leave-stat">' +
+      '<div class="stats-item-label">On Leave</div>' +
+      '<div class="stats-item-value">' + leaveCount + '</div>' +
+    '</div>' +
+    '<div class="stats-item percentage-stat">' +
+      '<div class="stats-item-label">Attendance %</div>' +
+      '<div class="stats-item-value">' + attendancePercentage + '%</div>' +
+    '</div>';
+}
+
+// Navigation functions
+function previousMonth() {
+  currentCalendarMonth = new Date(currentCalendarMonth.getFullYear(), currentCalendarMonth.getMonth() - 1, 1);
+  displayAttendanceCalendar();
+}
+
+function nextMonth() {
+  currentCalendarMonth = new Date(currentCalendarMonth.getFullYear(), currentCalendarMonth.getMonth() + 1, 1);
+  displayAttendanceCalendar();
+}
+
+// Analytics Functions
+var analyticsCharts = {};
+
+function initializeAnalytics() {
+  var today = new Date().toISOString().split('T')[0];
+  var analyticsDateInput = document.getElementById('analyticsDatePicker');
+  if (analyticsDateInput) {
+    analyticsDateInput.value = today;
+  }
+  updateAnalytics();
+}
+
+function getWeekStartDate(date) {
+  var d = new Date(date);
+  var day = d.getDay();
+  var diff = d.getDate() - day + (day === 0 ? -6 : 1);
+  return new Date(d.setDate(diff));
+}
+
+function getMonthStartDate(date) {
+  return new Date(date.getFullYear(), date.getMonth(), 1);
+}
+
+function getMonthEndDate(date) {
+  return new Date(date.getFullYear(), date.getMonth() + 1, 0);
+}
+
+function getWeekEndDate(date) {
+  var d = new Date(date);
+  var day = d.getDay();
+  var diff = d.getDate() - day + (day === 0 ? -6 : 1) + 6;
+  return new Date(d.setDate(diff));
+}
+
+function updateAnalytics() {
+  var viewType = document.getElementById('analyticsViewType').value;
+  var selectedDate = new Date(document.getElementById('analyticsDatePicker').value);
+  
+  var startDate, endDate, dateLabel;
+  
+  if (viewType === 'weekly') {
+    startDate = getWeekStartDate(selectedDate);
+    endDate = getWeekEndDate(selectedDate);
+    var weekNum = Math.ceil((selectedDate.getDate() + getMonthStartDate(selectedDate).getDay()) / 7);
+    dateLabel = 'Week ' + weekNum + ' of ' + selectedDate.getFullYear();
+  } else {
+    startDate = getMonthStartDate(selectedDate);
+    endDate = getMonthEndDate(selectedDate);
+    dateLabel = selectedDate.toLocaleString('default', { month: 'long', year: 'numeric' });
+  }
+  
+  var students = DB.query('students', function(s) { return s.dept === currentUser.dept; });
+  var attendanceRecords = DB.query('attendance', function(a) {
+    var recordDate = new Date(a.date);
+    return a.date >= getDateString(startDate.getFullYear(), startDate.getMonth(), startDate.getDate()) &&
+           a.date <= getDateString(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
+  });
+  
+  // Calculate statistics
+  var dailyStats = {};
+  var studentStats = {};
+  
+  // Initialize student stats
+  for (var i = 0; i < students.length; i++) {
+    studentStats[students[i].reg] = { present: 0, absent: 0, leave: 0, total: 0, name: students[i].name };
+  }
+  
+  // Count attendance by day
+  for (var d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+    var dateStr = getDateString(d.getFullYear(), d.getMonth(), d.getDate());
+    dailyStats[dateStr] = { present: 0, absent: 0, leave: 0, total: 0 };
+  }
+  
+  // Process attendance records
+  for (var i = 0; i < attendanceRecords.length; i++) {
+    var record = attendanceRecords[i];
+    var dateStr = record.date;
+    
+    if (dailyStats[dateStr]) {
+      dailyStats[dateStr].total++;
+      if (record.status === 'present') {
+        dailyStats[dateStr].present++;
+      } else if (record.status === 'absent') {
+        dailyStats[dateStr].absent++;
+      } else if (record.status === 'leave') {
+        dailyStats[dateStr].leave++;
+      }
+    }
+    
+    if (studentStats[record.studentReg]) {
+      studentStats[record.studentReg].total++;
+      if (record.status === 'present') {
+        studentStats[record.studentReg].present++;
+      } else if (record.status === 'absent') {
+        studentStats[record.studentReg].absent++;
+      } else if (record.status === 'leave') {
+        studentStats[record.studentReg].leave++;
+      }
+    }
+  }
+  
+  // Prepare chart data
+  var dates = Object.keys(dailyStats).sort();
+  var presentData = dates.map(function(d) { return dailyStats[d].present; });
+  var absentData = dates.map(function(d) { return dailyStats[d].absent; });
+  var leaveData = dates.map(function(d) { return dailyStats[d].leave; });
+  
+  var totalPresent = presentData.reduce(function(a, b) { return a + b; }, 0);
+  var totalAbsent = absentData.reduce(function(a, b) { return a + b; }, 0);
+  var totalLeave = leaveData.reduce(function(a, b) { return a + b; }, 0);
+  var totalRecords = totalPresent + totalAbsent + totalLeave;
+  
+  // Update summary cards
+  document.getElementById('analyticsAvgAttendance').textContent = totalRecords > 0 ? Math.round((totalPresent / totalRecords) * 100) + '%' : '0%';
+  document.getElementById('analyticsAbsentCount').textContent = totalAbsent;
+  document.getElementById('analyticsLeaveCount').textContent = totalLeave;
+  document.getElementById('analyticsPresentCount').textContent = totalPresent;
+  
+  // Draw charts
+  drawAttendanceTrendChart(dates, presentData, absentData, leaveData);
+  drawStatusDistributionChart(totalPresent, totalAbsent, totalLeave);
+  
+  // Update student wise analytics
+  updateStudentWiseAnalytics(studentStats, students);
+}
+
+function drawAttendanceTrendChart(dates, presentData, absentData, leaveData) {
+  var canvas = document.getElementById('attendanceTrendChart');
+  var ctx = canvas.getContext('2d');
+  
+  canvas.width = canvas.offsetWidth;
+  canvas.height = 250;
+  
+  var padding = 40;
+  var chartWidth = canvas.width - padding * 2;
+  var chartHeight = canvas.height - padding * 2;
+  
+  // Clear canvas
+  ctx.fillStyle = 'rgba(0, 0, 0, 0)';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  
+  // Draw axes
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(padding, padding);
+  ctx.lineTo(padding, canvas.height - padding);
+  ctx.lineTo(canvas.width - padding, canvas.height - padding);
+  ctx.stroke();
+  
+  // Draw grid lines and labels
+  var maxValue = Math.max(...presentData, ...absentData, ...leaveData, 1);
+  var gridLines = 5;
+  
+  for (var i = 0; i <= gridLines; i++) {
+    var y = canvas.height - padding - (i / gridLines) * chartHeight;
+    var value = Math.round((i / gridLines) * maxValue);
+    
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+    ctx.beginPath();
+    ctx.moveTo(padding, y);
+    ctx.lineTo(canvas.width - padding, y);
+    ctx.stroke();
+    
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+    ctx.font = '11px Arial';
+    ctx.textAlign = 'right';
+    ctx.fillText(value, padding - 10, y + 4);
+  }
+  
+  // Plot data
+  var pointWidth = chartWidth / (dates.length > 0 ? dates.length : 1);
+  
+  // Draw lines
+  var lineWidth = 2;
+  var colors = ['#10b981', '#ef4444', '#f59e0b'];
+  var dataArrays = [presentData, absentData, leaveData];
+  
+  for (var d = 0; d < dataArrays.length; d++) {
+    ctx.strokeStyle = colors[d];
+    ctx.lineWidth = lineWidth;
+    ctx.beginPath();
+    
+    for (var i = 0; i < dataArrays[d].length; i++) {
+      var x = padding + i * pointWidth + pointWidth / 2;
+      var y = canvas.height - padding - (dataArrays[d][i] / maxValue) * chartHeight;
+      
+      if (i === 0) {
+        ctx.moveTo(x, y);
+      } else {
+        ctx.lineTo(x, y);
+      }
+    }
+    ctx.stroke();
+    
+    // Draw points
+    ctx.fillStyle = colors[d];
+    for (var i = 0; i < dataArrays[d].length; i++) {
+      var x = padding + i * pointWidth + pointWidth / 2;
+      var y = canvas.height - padding - (dataArrays[d][i] / maxValue) * chartHeight;
+      ctx.beginPath();
+      ctx.arc(x, y, 4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  
+  // Add legend
+  var legends = ['Present', 'Absent', 'Leave'];
+  for (var i = 0; i < legends.length; i++) {
+    ctx.fillStyle = colors[i];
+    ctx.fillRect(canvas.width - 140, 10 + i * 20, 12, 12);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+    ctx.font = '12px Arial';
+    ctx.textAlign = 'left';
+    ctx.fillText(legends[i], canvas.width - 120, 20 + i * 20);
+  }
+}
+
+function drawStatusDistributionChart(present, absent, leave) {
+  var canvas = document.getElementById('statusDistributionChart');
+  var ctx = canvas.getContext('2d');
+  
+  canvas.width = canvas.offsetWidth;
+  canvas.height = 250;
+  
+  var total = present + absent + leave;
+  if (total === 0) {
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+    ctx.font = '14px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('No data available', canvas.width / 2, canvas.height / 2);
+    return;
+  }
+  
+  var centerX = canvas.width / 2;
+  var centerY = canvas.height / 2 - 20;
+  var radius = Math.min(canvas.width, canvas.height) / 3;
+  
+  var colors = ['#10b981', '#ef4444', '#f59e0b'];
+  var data = [present, absent, leave];
+  var labels = ['Present', 'Absent', 'Leave'];
+  var startAngle = -Math.PI / 2;
+  
+  for (var i = 0; i < data.length; i++) {
+    var sliceAngle = (data[i] / total) * Math.PI * 2;
+    var endAngle = startAngle + sliceAngle;
+    
+    // Draw slice
+    ctx.fillStyle = colors[i];
+    ctx.beginPath();
+    ctx.moveTo(centerX, centerY);
+    ctx.arc(centerX, centerY, radius, startAngle, endAngle);
+    ctx.closePath();
+    ctx.fill();
+    
+    // Draw percentage text
+    var midAngle = startAngle + sliceAngle / 2;
+    var textX = centerX + Math.cos(midAngle) * (radius * 0.65);
+    var textY = centerY + Math.sin(midAngle) * (radius * 0.65);
+    var percentage = Math.round((data[i] / total) * 100);
+    
+    ctx.fillStyle = 'white';
+    ctx.font = 'bold 12px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText(percentage + '%', textX, textY);
+    
+    startAngle = endAngle;
+  }
+  
+  // Add legend
+  for (var i = 0; i < labels.length; i++) {
+    ctx.fillStyle = colors[i];
+    ctx.fillRect(20, 20 + i * 25, 15, 15);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+    ctx.font = '12px Arial';
+    ctx.textAlign = 'left';
+    ctx.fillText(labels[i] + ' (' + data[i] + ')', 40, 32 + i * 25);
+  }
+}
+
+function updateStudentWiseAnalytics(studentStats, students) {
+  var container = document.getElementById('studentWiseAnalytics');
+  container.innerHTML = '';
+  
+  // Sort students by attendance percentage
+  var sortedStudents = students.map(function(s) {
+    var stats = studentStats[s.reg];
+    var percentage = stats.total > 0 ? Math.round((stats.present / stats.total) * 100) : 0;
+    return { ...s, ...stats, percentage: percentage };
+  }).sort(function(a, b) { return b.percentage - a.percentage; });
+  
+  for (var i = 0; i < sortedStudents.length; i++) {
+    var student = sortedStudents[i];
+    var html = '<div style="padding: 12px; background: rgba(255,255,255,0.03); border-radius: 8px; margin-bottom: 10px; border-left: 4px solid ' + 
+      (student.percentage >= 75 ? '#10b981' : student.percentage >= 50 ? '#f59e0b' : '#ef4444') + ';">';
+    html += '<div style="display: flex; justify-content: space-between; align-items: center;">';
+    html += '<div><strong>' + student.name + '</strong> (Reg: ' + student.reg + ')</div>';
+    html += '<div style="font-size: 18px; font-weight: bold; color: ' + (student.percentage >= 75 ? '#10b981' : student.percentage >= 50 ? '#f59e0b' : '#ef4444') + ';">' + student.percentage + '%</div>';
+    html += '</div>';
+    html += '<div style="font-size: 12px; color: #94a3b8; margin-top: 8px;">';
+    html += 'Present: ' + student.present + ' | Absent: ' + student.absent + ' | Leave: ' + student.leave;
+    html += '</div>';
+    html += '</div>';
+    container.innerHTML += html;
+  }
+}
+
+window.onload = function() {
+  var today = new Date().toISOString().split('T')[0];
+  var leaveDateInput = document.getElementById('leaveDate');
+  if (leaveDateInput) {
+    leaveDateInput.setAttribute('min', today);
+  }
+  
+  console.log('🎓 Smart Campus System Initialized');
+  console.log('✨ Enhanced with Real-time Notifications');
+  console.log('📱 Complete Leave Management Solution');
+};
+
+// Cleanup on page unload
+window.onbeforeunload = function() {
+  stopNotificationPolling();
+};
+
+// AI Reason Analyzer - Rule-based NLP classifier
+function analyzeReason(reason) {
+  // Normalize text
+  var text = reason.toLowerCase().trim();
+
+  // Keyword-based categories
+  var categories = {
+    'Medical': [
+      'fever', 'cold', 'cough', 'doctor', 'hospital', 'sick', 'illness', 
+      'medicine', 'surgery', 'diagnosed', 'treatment', 'checkup', 'dental',
+      'headache', 'flu', 'injury', 'health', 'medical', 'consultation'
+    ],
+    'Emergency': [
+      'accident', 'critical', 'death', 'died', 'emergency', 'injured', 
+      'injury', 'urgent', 'crisis', 'severe', 'grave', 'life-threatening'
+    ],
+    'Personal': [
+      'family', 'function', 'wedding', 'ceremony', 'relative', 'parent',
+      'sibling', 'cousin', 'uncle', 'aunt', 'grandfather', 'grandmother',
+      'personal', 'home', 'domestic', 'household'
+    ],
+    'Academic': [
+      'exam', 'examination', 'test', 'competition', 'olympiad', 'project',
+      'assignment', 'seminar', 'conference', 'workshop', 'internship',
+      'academic', 'study', 'research', 'presentation'
+    ],
+    'Suspicious': [
+      'trip', 'movie', 'outing', 'tired', 'bored', 'vacation', 'holiday',
+      'rest', 'relax', 'leisure', 'party', 'shopping', 'friend', 'picnic',
+      'hangout', 'fun', 'enjoy', 'game', 'concert', 'event'
+    ]
+  };
+
+  // Score each category
+  var bestMatch = 'Personal';
+  var maxScore = 0;
+  var scores = {};
+
+  for (var category in categories) {
+    var score = 0;
+    var keywords = categories[category];
+    for (var i = 0; i < keywords.length; i++) {
+      if (text.indexOf(keywords[i]) !== -1) {
+        score++;
+      }
+    }
+
+    scores[category] = score;
+
+    if (score > maxScore) {
+      maxScore = score;
+      bestMatch = category;
+    }
+  }
+
+  // Determine priority based on category
+  var priority = 'Normal';
+
+  if (bestMatch === 'Medical' || bestMatch === 'Emergency') {
+    priority = 'High';
+  } else if (bestMatch === 'Academic') {
+    priority = 'Normal';
+  } else if (bestMatch === 'Suspicious') {
+    priority = 'Low';
+  }
+
+  // Calculate confidence
+  var wordCount = Math.max(5, text.split(' ').length);
+  var confidence = (maxScore / wordCount) * 100;
+
+  return {
+    category: bestMatch,
+    priority: priority,
+    score: maxScore,
+    categoryScores: scores,
+    confidence: confidence
+  };
+}
+</script>
+</body>
+</html>
